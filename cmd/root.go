@@ -7,8 +7,8 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "validator-status",
-	Short: "Validator status is a simple CLI to generate validator details for any cosmos chain",
+	Use:   "chain-details",
+	Short: "Chain details is a simple CLI to generate few specific details for any cosmos chain in a CSV file",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},

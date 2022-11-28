@@ -16,7 +16,7 @@ func WriteCSV(fileName string, header []string, data [][]string) error {
 	defer writer.Flush()
 
 	if err := writer.Write(header); err != nil {
-		panic(err)
+		return err
 	}
 
 	for i := range data {
@@ -25,7 +25,7 @@ func WriteCSV(fileName string, header []string, data [][]string) error {
 			csvRow = append(csvRow, data[i][j])
 		}
 		if err := writer.Write(csvRow); err != nil {
-			panic(err)
+			return err
 		}
 	}
 	return nil

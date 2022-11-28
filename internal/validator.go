@@ -2,11 +2,13 @@ package internal
 
 import (
 	"context"
-	"github.com/arhamchrodia/validator-status/types"
+	"google.golang.org/grpc"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"google.golang.org/grpc"
+
+	"github.com/arhamchordia/chain-details/types"
 )
 
 // ParseValidators parses all the requested information
@@ -20,7 +22,7 @@ func ParseValidators(grpcConn *grpc.ClientConn, accountPrefix string) error {
 		context.Background(),
 		&stakingtypes.QueryValidatorsRequest{
 			Pagination: &query.PageRequest{
-				Limit: 500,
+				Limit: types.ValidatorsLimit,
 			},
 		})
 	if err != nil {

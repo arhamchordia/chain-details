@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/arhamchrodia/validator-status/internal"
 	"github.com/spf13/cobra"
+
+	"github.com/arhamchordia/chain-details/internal"
 )
 
 var parseDelegatorsCmd = &cobra.Command{

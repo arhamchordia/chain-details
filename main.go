@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/arhamchrodia/validator-status/cmd"
+	"github.com/arhamchordia/chain-details/cmd"
 )
 
 func main() {

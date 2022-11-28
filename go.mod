@@ -1,4 +1,4 @@
-module github.com/arhamchrodia/validator-status
+module github.com/arhamchordia/chain-details
 
 go 1.19
 

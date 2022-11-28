@@ -2,11 +2,13 @@ package internal
 
 import (
 	"context"
-	"github.com/arhamchrodia/validator-status/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"google.golang.org/grpc"
+
+	"github.com/arhamchordia/chain-details/types"
 )
 
 // ParseDelegators parses all the requested information
@@ -19,7 +21,7 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 	stakingResponse, err := stakingClient.Validators(
 		context.Background(),
 		&stakingtypes.QueryValidatorsRequest{
-			Pagination: &query.PageRequest{Limit: 500},
+			Pagination: &query.PageRequest{Limit: types.ValidatorsLimit},
 		})
 	if err != nil {
 		return err
@@ -38,7 +40,7 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 			context.Background(),
 			&stakingtypes.QueryValidatorDelegationsRequest{
 				ValidatorAddr: val.OperatorAddress,
-				Pagination:    &query.PageRequest{Limit: 100000000},
+				Pagination:    &query.PageRequest{Limit: types.DelegatorsLimit},
 			},
 		)
 		if err != nil {

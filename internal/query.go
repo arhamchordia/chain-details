@@ -2,9 +2,10 @@ package internal
 
 import (
 	"crypto/tls"
+	"time"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"time"
 )
 
 func QueryValidatorsData(grpcUrl, accountPrefix string) error {

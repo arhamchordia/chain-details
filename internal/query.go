@@ -2,10 +2,15 @@ package internal
 
 import (
 	"crypto/tls"
+	"encoding/json"
+	"io"
+	"net/http"
 	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/arhamchordia/chain-details/types"
 )
 
 func QueryValidatorsData(grpcUrl, accountPrefix string) error {
@@ -74,6 +79,32 @@ func QueryDelegatorsData(grpcUrl string) error {
 		} else if grpcConn.GetState().String() == "TRANSIENT_FAILURE" {
 			break
 		}
+	}
+
+	return nil
+}
+
+func QueryGenesisJSON(jsonURL, denom string) error {
+	res, err := http.Get(jsonURL)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	var response types.Genesis
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return err
+	}
+
+	err = ParseGenesis(response.AppState.Auth.Accounts, denom)
+	if err != nil {
+		return err
 	}
 
 	return nil

@@ -3,6 +3,7 @@ package types
 import (
 	"errors"
 	"strings"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
@@ -12,17 +13,31 @@ const (
 	ValidatorsInfoFileName             = "validators_info"
 	DelegatorDelegationEntriesFileName = "delegator_delegation_entries"
 	DelegatorSharesFileName            = "delegator_shares"
+	GenesisAccountAnalysisFileName     = "genesis_accounts"
 
-	HeaderMoniker          = "Moniker"
-	HeaderPercentageWeight = "Percentage Weight"
-	HeaderSelfDelegation   = "Self Delegation"
-	HeaderTotalDelegations = "Total Delegations"
-	HeaderDelegator        = "Delegator"
-	HeaderValidator        = "Validator"
-	HeaderShares           = "Shares"
+	HeaderMoniker              = "Moniker"
+	HeaderPercentageWeight     = "Percentage Weight"
+	HeaderSelfDelegation       = "Self Delegation"
+	HeaderTotalDelegations     = "Total Delegations"
+	HeaderDelegator            = "Delegator"
+	HeaderValidator            = "Validator"
+	HeaderShares               = "Shares"
+	HeaderAddress              = "Address"
+	HeaderVestingEndTime       = "Vesting End Time"
+	HeaderOriginalVesting      = "Original Vesting"
+	HeaderVestingStartTime     = "Vesting Start Time"
+	HeaderTokensFreeEveryBlock = "Tokens Free Every Block"
+	HeaderTokensFreeEveryDay   = "Tokens Free Every Day"
 
-	ValidatorsLimit = 50000
-	DelegatorsLimit = 1000000000
+	IdentifierDelayedVestingAccount    = "/cosmos.vesting.v1beta1.DelayedVestingAccount"
+	IdentifierContinuousVestingAccount = "/cosmos.vesting.v1beta1.ContinuousVestingAccount"
+	IdentifierPermanentLockedAccount   = "/cosmos.vesting.v1beta1.PermanentLockedAccount"
+	IdentifierPeriodicVestingAccount   = "/cosmos.vesting.v1beta1.PeriodicVestingAccount"
+
+	ValidatorsLimit  = 50000
+	DelegatorsLimit  = 1000000000
+	AverageBlockTime = 5
+	SecondsInADay    = 86400
 )
 
 // ValAddressFromBech32 creates a ValAddress from a Bech32 string.
@@ -58,4 +73,9 @@ func Bech32ifyAddressBytes(prefix string, address sdk.AccAddress) (string, error
 		return "", errors.New("prefix cannot be empty")
 	}
 	return bech32.ConvertAndEncode(prefix, address.Bytes())
+}
+
+func GetTimeFromUNIXTimeStamp(unix int) time.Time {
+	tm := time.Unix(int64(unix), 0)
+	return tm
 }

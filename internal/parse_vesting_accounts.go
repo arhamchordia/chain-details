@@ -8,10 +8,10 @@ import (
 	"github.com/arhamchordia/chain-details/types"
 )
 
-// ParseGenesis parses all the auth accounts in genesis file and
+// ParseVestingAccounts parses all the vesting accounts in genesis file and
 // returns and error if anything fails
-func ParseGenesis(genesisAccounts []types.Account, denom string) error {
-	// initialise all types of dva arrays
+func ParseVestingAccounts(vestingAccounts []types.Account, denom string) error {
+	// initialise all types of vesting account arrays
 	var (
 		delayedVestingAccounts    []types.DelayedVestingAccount
 		continuousVestingAccounts []types.ContinuousVestingAccount
@@ -21,9 +21,9 @@ func ParseGenesis(genesisAccounts []types.Account, denom string) error {
 
 	// iterate over all types of vesting accounts and performs
 	// corresponding operations
-	for _, account := range genesisAccounts {
+	for _, account := range vestingAccounts {
 		switch account.GetType() {
-		// only end time and tokens are stored in delayed vesting dva
+		// only end time and tokens are stored in delayed vesting account
 		// as the tokens are locked till the end time of the vesting
 		case types.IdentifierDelayedVestingAccount:
 			// get end time
@@ -40,7 +40,7 @@ func ParseGenesis(genesisAccounts []types.Account, denom string) error {
 					EndTime: endTime,
 				})
 
-		// in continuous vesting dva, the tokens are continuously being freed up every block
+		// in continuous vesting account, the tokens are continuously being freed up every block
 		// tokens every block = tokens / number of block between the period
 		case types.IdentifierContinuousVestingAccount:
 			// convert start time and end time in int
@@ -84,7 +84,7 @@ func ParseGenesis(genesisAccounts []types.Account, denom string) error {
 					TokensFreeEveryDay:   tokensFreeEveryDay,
 				})
 
-		// in permanent locked dva, the tokens are locked forever and can
+		// in permanent locked account, the tokens are locked forever and can
 		// can only be used in case of delegating and participating in governance
 		case types.IdentifierPermanentLockedAccount:
 			permanentLockedAccounts = append(
@@ -103,7 +103,7 @@ func ParseGenesis(genesisAccounts []types.Account, denom string) error {
 				return err
 			}
 
-			// iterate over all the vesting period of the given dva
+			// iterate over all the vesting period of the given account
 			for i := range account.VestingPeriods {
 				// convert period string into int
 				period, err := strconv.Atoi(account.VestingPeriods[i].Length)

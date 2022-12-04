@@ -6,9 +6,9 @@ import (
 	"github.com/arhamchordia/chain-details/internal"
 )
 
-var parseGenesisJSONCmd = &cobra.Command{
-	Use:   "genesis [json-url] [denom]",
-	Short: "Generates csv file with accounts analysis in genesis data (all the vesting data and some details on that)",
+var parseVestingAccountsJSONCmd = &cobra.Command{
+	Use:   "vesting-accounts [json-url] [denom]",
+	Short: "Generates csv file with accounts analysis in genesis, information on all the vesting accounts.",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		jsonURL := args[0]
@@ -23,5 +23,5 @@ var parseGenesisJSONCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(parseGenesisJSONCmd)
+	rootCmd.AddCommand(parseVestingAccountsJSONCmd)
 }

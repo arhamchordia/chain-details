@@ -102,7 +102,7 @@ func QueryGenesisJSON(jsonURL, denom string) error {
 		return err
 	}
 
-	err = ParseGenesis(response.AppState.Auth.Accounts, denom)
+	err = ParseVestingAccounts(response.AppState.Auth.Accounts, denom)
 	if err != nil {
 		return err
 	}

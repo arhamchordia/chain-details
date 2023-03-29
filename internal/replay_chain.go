@@ -17,7 +17,7 @@ func ReplayChain(RPCAddress string) error {
 
 	addressAndAmount := map[string]string{}
 	for i := 18400; i < 19424; i++ {
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond * 100)
 		blockHeight := int64(i)
 
 		blockResults, err := rpcClient.BlockResults(context.Background(), &blockHeight)

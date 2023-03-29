@@ -12,23 +12,29 @@ import (
 	"github.com/tendermint/tendermint/rpc/client/http"
 )
 
-type DepositorDetails struct {
+type DepositorDetailsBond struct {
 	Address      string `json:"address"`
 	BlockHeight  int64  `json:"block_height"`
 	Amount       string `json:"amount"`
 	VaultAddress string `json:"primitive_address"`
-	//Action       string `json:"action"`
-	//BurntShares  string `json:"burnt_shares"` //TODO incorporate unbonding
-	BondID int64 `json:"bond_id"`
+	BondID       int64  `json:"bond_id"`
 }
 
-func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
+type DepositorDetailsUnbond struct {
+	Address      string `json:"address"`
+	BlockHeight  int64  `json:"block_height"`
+	VaultAddress string `json:"primitive_address"`
+	BurntShares  string `json:"burnt_shares"`
+	UnbondID     int64  `json:"unbond_id""`
+}
+
+func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
 	rpcClient, err := http.New(RPCAddress, "/websocket")
 	if err != nil {
 		return err
 	}
 
-	var depositorDetails []DepositorDetails
+	var depositorDetails []DepositorDetailsBond
 	for i := startingHeight; i <= endHeight; i++ {
 		time.Sleep(time.Millisecond * 10)
 
@@ -42,7 +48,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 		}
 
 		for _, j := range blockResults.TxsResults {
-			var tempDepositorDetails []DepositorDetails
+			var tempDepositorDetails []DepositorDetailsBond
 			var tempBondIDs []int64
 			if strings.Contains(string(j.Data), "/cosmwasm.wasm.v1.MsgExecuteContract") {
 				for o, k := range j.Events {
@@ -52,7 +58,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 								if j.Events[o+2].Type == "coin_spent" {
 									if j.Events[o+3].Type == "coin_received" && string(j.Events[o+3].Attributes[0].Value) == "quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu" {
 										fmt.Println(string(j.Events[o+2].Attributes[0].Value), ":", string(j.Events[o+2].Attributes[1].Value))
-										tempDepositorDetails = append(tempDepositorDetails, DepositorDetails{
+										tempDepositorDetails = append(tempDepositorDetails, DepositorDetailsBond{
 											Address:      string(j.Events[o+2].Attributes[0].Value),
 											Amount:       string(j.Events[o+2].Attributes[1].Value),
 											BlockHeight:  i,
@@ -84,7 +90,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 				}
 
 				for p := range tempBondIDs {
-					depositorDetails = append(depositorDetails, DepositorDetails{
+					depositorDetails = append(depositorDetails, DepositorDetailsBond{
 						Address:      tempDepositorDetails[p].Address,
 						Amount:       tempDepositorDetails[p].Amount,
 						BlockHeight:  tempDepositorDetails[p].BlockHeight,
@@ -102,6 +108,61 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 	}
 
 	err = os.WriteFile("replay"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ReplayChainUnbond(RPCAddress string, startingHeight, endHeight int64) error {
+	rpcClient, err := http.New(RPCAddress, "/websocket")
+	if err != nil {
+		return err
+	}
+
+	var depositorDetailsUnbond []DepositorDetailsUnbond
+	for i := startingHeight; i <= endHeight; i++ {
+		time.Sleep(time.Millisecond * 10)
+
+		blockResults, err := rpcClient.BlockResults(context.Background(), &i)
+		if err != nil {
+			return err
+		}
+
+		if blockResults.Height == 0 {
+			return fmt.Errorf("cannot read height %s", i)
+		}
+
+		for _, j := range blockResults.TxsResults {
+			if strings.Contains(string(j.Data), "/cosmwasm.wasm.v1.MsgExecuteContract") {
+				for _, k := range j.Events {
+					if k.Type == "wasm" {
+						if len(k.Attributes) == 5 {
+							unbondID, err := strconv.ParseInt(string(k.Attributes[4].Value), 10, 64)
+							if err != nil {
+								return fmt.Errorf("incorrect unbond ID at height %s", i)
+							}
+							depositorDetailsUnbond = append(depositorDetailsUnbond, DepositorDetailsUnbond{
+								Address:      string(k.Attributes[2].Value),
+								BlockHeight:  i,
+								BurntShares:  string(k.Attributes[3].Value),
+								VaultAddress: string(k.Attributes[0].Value),
+								UnbondID:     unbondID,
+							})
+						}
+					}
+				}
+			}
+		}
+	}
+
+	file, err := json.MarshalIndent(depositorDetailsUnbond, "", " ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile("replay-unbond"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
 	}

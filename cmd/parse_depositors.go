@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/arhamchordia/chain-details/internal"
 	"github.com/spf13/cobra"
 	"strconv"
@@ -22,8 +21,7 @@ var parseDepositorsCmd = &cobra.Command{
 			return err
 		}
 
-		depositorDetails, err := internal.ReplayChain(rpcURL, startingHeight, endHeight)
-		fmt.Println(depositorDetails)
+		err = internal.ReplayChain(rpcURL, startingHeight, endHeight)
 		if err != nil {
 			return err
 		}

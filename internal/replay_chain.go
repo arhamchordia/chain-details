@@ -2,7 +2,9 @@ package internal
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -10,21 +12,21 @@ import (
 )
 
 type BondingID struct {
-	BondID           string
-	DepositorDetails []DepositorDetails
+	BondID           string             `json:"bond_id"`
+	DepositorDetails []DepositorDetails `json:"depositor_details"`
 }
 
 type DepositorDetails struct {
-	Address          string
-	BlockHeight      int64
-	Amount           string
-	PrimitiveAddress string
+	Address      string `json:"address"`
+	BlockHeight  int64  `json:"block_height"`
+	Amount       string `json:"amount"`
+	VaultAddress string `json:"primitive_address"`
 }
 
-func ReplayChain(RPCAddress string, startingHeight, endHeight int64) ([]BondingID, error) {
+func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 	rpcClient, err := http.New(RPCAddress, "/websocket")
 	if err != nil {
-		return []BondingID{}, err
+		return err
 	}
 
 	var bondingIDs []BondingID
@@ -33,7 +35,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) ([]BondingI
 
 		blockResults, err := rpcClient.BlockResults(context.Background(), &i)
 		if err != nil {
-			return bondingIDs, err
+			return err
 		}
 		for _, j := range blockResults.TxsResults {
 			var tempDepositorDetails []DepositorDetails
@@ -47,10 +49,10 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) ([]BondingI
 									if j.Events[o+3].Type == "coin_received" && string(j.Events[o+3].Attributes[0].Value) == "quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu" {
 										fmt.Println(string(j.Events[o+2].Attributes[0].Value), ":", string(j.Events[o+2].Attributes[1].Value))
 										tempDepositorDetails = append(tempDepositorDetails, DepositorDetails{
-											Address:          string(j.Events[o+2].Attributes[0].Value),
-											Amount:           string(j.Events[o+2].Attributes[1].Value),
-											BlockHeight:      i,
-											PrimitiveAddress: "quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu",
+											Address:      string(j.Events[o+2].Attributes[0].Value),
+											Amount:       string(j.Events[o+2].Attributes[1].Value),
+											BlockHeight:  i,
+											VaultAddress: "quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu",
 										})
 									}
 								}
@@ -73,10 +75,19 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) ([]BondingI
 						DepositorDetails: tempDepositorDetails,
 					})
 				}
-
 			}
-
 		}
 	}
-	return bondingIDs, nil
+
+	file, err := json.MarshalIndent(bondingIDs, "", " ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile("test.json", file, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

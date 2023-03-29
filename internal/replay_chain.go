@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -84,7 +85,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 		return err
 	}
 
-	err = os.WriteFile("test.json", file, 0644)
+	err = os.WriteFile("replay"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
 	}

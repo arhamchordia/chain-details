@@ -67,10 +67,13 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) ([]BondingI
 					}
 				}
 
-				bondingIDs = append(bondingIDs, BondingID{
-					BondID:           bondID,
-					DepositorDetails: tempDepositorDetails,
-				})
+				if bondID != "" && len(tempDepositorDetails) > 0 {
+					bondingIDs = append(bondingIDs, BondingID{
+						BondID:           bondID,
+						DepositorDetails: tempDepositorDetails,
+					})
+				}
+
 			}
 
 		}

@@ -31,7 +31,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 	}
 
 	var bondingIDs []BondingID
-	for i := startingHeight; i < endHeight; i++ {
+	for i := startingHeight; i <= endHeight; i++ {
 		time.Sleep(time.Millisecond * 50)
 
 		blockResults, err := rpcClient.BlockResults(context.Background(), &i)

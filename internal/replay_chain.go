@@ -17,7 +17,9 @@ type DepositorDetails struct {
 	BlockHeight  int64  `json:"block_height"`
 	Amount       string `json:"amount"`
 	VaultAddress string `json:"primitive_address"`
-	BondID       string `json:"bond_id"`
+	//Action       string `json:"action"`
+	//BurntShares  string `json:"burnt_shares"` //TODO incorporate unbonding
+	BondID string `json:"bond_id"`
 }
 
 func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
@@ -66,7 +68,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 				}
 
 				for _, q := range j.Events {
-					if q.Type == "wasm" && string(q.Attributes[0].Value) == "quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu" {
+					if q.Type == "wasm" && string(q.Attributes[0].Value) == "quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu" && string(q.Attributes[1].Key) == "bond_id" {
 						tempBondIDs = append(tempBondIDs, string(q.Attributes[1].Value))
 					}
 				}

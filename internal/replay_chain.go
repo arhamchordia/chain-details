@@ -28,7 +28,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 
 	var depositorDetails []DepositorDetails
 	for i := startingHeight; i <= endHeight; i++ {
-		time.Sleep(time.Millisecond * 50)
+		time.Sleep(time.Millisecond * 10)
 
 		blockResults, err := rpcClient.BlockResults(context.Background(), &i)
 		if err != nil {

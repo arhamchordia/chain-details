@@ -72,7 +72,9 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 				}
 
 				if len(tempBondIDs) != len(tempDepositorDetails) {
-					return fmt.Errorf("mismatch in the counting of bond IDs")
+					fmt.Println(tempBondIDs)
+					fmt.Println(tempDepositorDetails)
+					return fmt.Errorf("mismatch in the counting of bond IDs %s", i)
 				}
 
 				for p := range tempBondIDs {

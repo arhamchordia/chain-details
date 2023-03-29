@@ -19,7 +19,7 @@ type DepositorDetails struct {
 	VaultAddress string `json:"primitive_address"`
 	//Action       string `json:"action"`
 	//BurntShares  string `json:"burnt_shares"` //TODO incorporate unbonding
-	BondID string `json:"bond_id"`
+	BondID int64 `json:"bond_id"`
 }
 
 func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
@@ -43,7 +43,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 
 		for _, j := range blockResults.TxsResults {
 			var tempDepositorDetails []DepositorDetails
-			var tempBondIDs []string
+			var tempBondIDs []int64
 			if strings.Contains(string(j.Data), "/cosmwasm.wasm.v1.MsgExecuteContract") {
 				for o, k := range j.Events {
 					if k.Type == "message" && string(k.Attributes[0].Value) == "/cosmwasm.wasm.v1.MsgExecuteContract" {
@@ -69,7 +69,11 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 
 				for _, q := range j.Events {
 					if q.Type == "wasm" && string(q.Attributes[0].Value) == "quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu" && string(q.Attributes[1].Key) == "bond_id" {
-						tempBondIDs = append(tempBondIDs, string(q.Attributes[1].Value))
+						tempBondID, err := strconv.ParseInt(string(q.Attributes[1].Value), 10, 64)
+						if err != nil {
+							return fmt.Errorf("incorrect bond ID at height %s", i)
+						}
+						tempBondIDs = append(tempBondIDs, tempBondID)
 					}
 				}
 

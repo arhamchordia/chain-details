@@ -12,16 +12,12 @@ import (
 	"github.com/tendermint/tendermint/rpc/client/http"
 )
 
-type BondingID struct {
-	BondID           string             `json:"bond_id"`
-	DepositorDetails []DepositorDetails `json:"depositor_details"`
-}
-
 type DepositorDetails struct {
 	Address      string `json:"address"`
 	BlockHeight  int64  `json:"block_height"`
 	Amount       string `json:"amount"`
 	VaultAddress string `json:"primitive_address"`
+	BondID       string `json:"bond_id"`
 }
 
 func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
@@ -30,7 +26,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 		return err
 	}
 
-	var bondingIDs []BondingID
+	var depositorDetails []DepositorDetails
 	for i := startingHeight; i <= endHeight; i++ {
 		time.Sleep(time.Millisecond * 50)
 
@@ -38,9 +34,14 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 		if err != nil {
 			return err
 		}
+
+		if blockResults.Height == 0 {
+			return fmt.Errorf("cannot read height %s", i)
+		}
+
 		for _, j := range blockResults.TxsResults {
 			var tempDepositorDetails []DepositorDetails
-			var bondID string
+			var tempBondIDs []string
 			if strings.Contains(string(j.Data), "/cosmwasm.wasm.v1.MsgExecuteContract") {
 				for o, k := range j.Events {
 					if k.Type == "message" && string(k.Attributes[0].Value) == "/cosmwasm.wasm.v1.MsgExecuteContract" {
@@ -66,21 +67,28 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 
 				for _, q := range j.Events {
 					if q.Type == "wasm" && string(q.Attributes[0].Value) == "quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu" {
-						bondID = string(q.Attributes[1].Value)
+						tempBondIDs = append(tempBondIDs, string(q.Attributes[0].Value))
 					}
 				}
 
-				if bondID != "" && len(tempDepositorDetails) > 0 {
-					bondingIDs = append(bondingIDs, BondingID{
-						BondID:           bondID,
-						DepositorDetails: tempDepositorDetails,
+				if len(tempBondIDs) != len(tempDepositorDetails) {
+					return fmt.Errorf("mismatch in the counting of bond IDs")
+				}
+
+				for p := range tempBondIDs {
+					depositorDetails = append(depositorDetails, DepositorDetails{
+						Address:      tempDepositorDetails[p].Address,
+						Amount:       tempDepositorDetails[p].Amount,
+						BlockHeight:  tempDepositorDetails[p].BlockHeight,
+						VaultAddress: tempDepositorDetails[p].VaultAddress,
+						BondID:       tempBondIDs[p],
 					})
 				}
 			}
 		}
 	}
 
-	file, err := json.MarshalIndent(bondingIDs, "", " ")
+	file, err := json.MarshalIndent(depositorDetails, "", " ")
 	if err != nil {
 		return err
 	}

@@ -36,6 +36,9 @@ func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
 
 	var depositorDetails []DepositorDetailsBond
 	for i := startingHeight; i <= endHeight; i++ {
+		if i%1000 == 0 {
+			fmt.Println(i)
+		}
 		time.Sleep(time.Millisecond * 10)
 
 		blockResults, err := rpcClient.BlockResults(context.Background(), &i)
@@ -57,7 +60,7 @@ func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
 							if j.Events[o+1].Type == "message" && string(j.Events[o+1].Attributes[0].Value) == "wasm" {
 								if j.Events[o+2].Type == "coin_spent" {
 									if j.Events[o+3].Type == "coin_received" && string(j.Events[o+3].Attributes[0].Value) == "quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu" {
-										fmt.Println(string(j.Events[o+2].Attributes[0].Value), ":", string(j.Events[o+2].Attributes[1].Value))
+										// fmt.Println(string(j.Events[o+2].Attributes[0].Value), ":", string(j.Events[o+2].Attributes[1].Value))
 										tempDepositorDetails = append(tempDepositorDetails, DepositorDetailsBond{
 											Address:      string(j.Events[o+2].Attributes[0].Value),
 											Amount:       string(j.Events[o+2].Attributes[1].Value),
@@ -123,6 +126,9 @@ func ReplayChainUnbond(RPCAddress string, startingHeight, endHeight int64) error
 
 	var depositorDetailsUnbond []DepositorDetailsUnbond
 	for i := startingHeight; i <= endHeight; i++ {
+		if i%1000 == 0 {
+			fmt.Println(i)
+		}
 		time.Sleep(time.Millisecond * 10)
 
 		blockResults, err := rpcClient.BlockResults(context.Background(), &i)

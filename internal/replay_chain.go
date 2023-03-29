@@ -67,7 +67,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 
 				for _, q := range j.Events {
 					if q.Type == "wasm" && string(q.Attributes[0].Value) == "quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu" {
-						tempBondIDs = append(tempBondIDs, string(q.Attributes[0].Value))
+						tempBondIDs = append(tempBondIDs, string(q.Attributes[1].Value))
 					}
 				}
 

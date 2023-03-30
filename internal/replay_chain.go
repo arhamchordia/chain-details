@@ -25,7 +25,22 @@ type DepositorDetailsUnbond struct {
 	BlockHeight  int64  `json:"block_height"`
 	VaultAddress string `json:"primitive_address"`
 	BurntShares  string `json:"burnt_shares"`
-	UnbondID     int64  `json:"unbond_id""`
+	UnbondID     int64  `json:"unbond_id"`
+}
+
+type LockDetailsByHeight struct {
+	Height          int64             `json:"height"`
+	ContractDetails []ContractDetails `json:"contract_details"`
+}
+
+type ContractDetails struct {
+	Address                 string `json:"address"`
+	LockID                  int64  `json:"lock_id"`
+	LockedTokensProtoString string `json:"locked_tokens_proto_string"`
+	Action                  string `json:"action"`
+	CallbackInfo            string `json:"callback_info"`
+	ReplyMessageID          string `json:"reply_message_id"`
+	ReplyResult             string `json:"reply_result"`
 }
 
 func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
@@ -47,7 +62,7 @@ func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
 		}
 
 		if blockResults.Height == 0 {
-			return fmt.Errorf("cannot read height %s", i)
+			return fmt.Errorf("cannot read height %d", i)
 		}
 
 		for _, j := range blockResults.TxsResults {
@@ -80,7 +95,7 @@ func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
 					if q.Type == "wasm" && string(q.Attributes[0].Value) == "quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu" && string(q.Attributes[1].Key) == "bond_id" {
 						tempBondID, err := strconv.ParseInt(string(q.Attributes[1].Value), 10, 64)
 						if err != nil {
-							return fmt.Errorf("incorrect bond ID at height %s", i)
+							return fmt.Errorf("incorrect bond ID at height %d", i)
 						}
 						tempBondIDs = append(tempBondIDs, tempBondID)
 					}
@@ -89,7 +104,7 @@ func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
 				if len(tempBondIDs) != len(tempDepositorDetails) {
 					fmt.Println(tempBondIDs)
 					fmt.Println(tempDepositorDetails)
-					return fmt.Errorf("mismatch in the counting of bond IDs %s", i)
+					return fmt.Errorf("mismatch in the counting of bond IDs %d", i)
 				}
 
 				for p := range tempBondIDs {
@@ -137,7 +152,7 @@ func ReplayChainUnbond(RPCAddress string, startingHeight, endHeight int64) error
 		}
 
 		if blockResults.Height == 0 {
-			return fmt.Errorf("cannot read height %s", i)
+			return fmt.Errorf("cannot read height %d", i)
 		}
 
 		for _, j := range blockResults.TxsResults {
@@ -147,7 +162,7 @@ func ReplayChainUnbond(RPCAddress string, startingHeight, endHeight int64) error
 						if len(k.Attributes) == 5 {
 							unbondID, err := strconv.ParseInt(string(k.Attributes[4].Value), 10, 64)
 							if err != nil {
-								return fmt.Errorf("incorrect unbond ID at height %s", i)
+								return fmt.Errorf("incorrect unbond ID at height %d", i)
 							}
 							depositorDetailsUnbond = append(depositorDetailsUnbond, DepositorDetailsUnbond{
 								Address:      string(k.Attributes[2].Value),
@@ -169,6 +184,89 @@ func ReplayChainUnbond(RPCAddress string, startingHeight, endHeight int64) error
 	}
 
 	err = os.WriteFile("replay-unbond"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CheckLockedTokens(RPCAddress string, startingHeight, endHeight int64) error {
+	rpcClient, err := http.New(RPCAddress, "/websocket")
+	if err != nil {
+		return err
+	}
+
+	var lockDetailsByHeight []LockDetailsByHeight
+
+	for i := startingHeight; i <= endHeight; i++ {
+		time.Sleep(time.Second)
+
+		blockResults, err := rpcClient.BlockResults(context.Background(), &i)
+		if err != nil {
+			return err
+		}
+
+		if blockResults.Height == 0 {
+			return fmt.Errorf("cannot read height %d", i)
+		}
+
+		tempContractDetailsMap := make(map[string]ContractDetails)
+		var tempContractDetails []ContractDetails
+		for _, j := range blockResults.TxsResults {
+			if strings.Contains(string(j.Data), "/ibc.core.client.v1.MsgUpdateClient") && strings.Contains(string(j.Data), "/ibc.core.channel.v1.MsgAcknowledgement") {
+				for _, k := range j.Events {
+					if k.Type == "wasm" && len(k.Attributes) == 3 {
+						if string(k.Attributes[0].Key) == "_contract_address" && string(k.Attributes[1].Key) == "lock_id" && string(k.Attributes[2].Key) == "locked_tokens" {
+							lockID, err := strconv.ParseInt(string(k.Attributes[1].Value), 10, 64)
+							if err != nil {
+								return fmt.Errorf("incorrect lock ID at height %d", i)
+							}
+							//fmt.Println(i, string(k.Attributes[0].Value), lockID, string(k.Attributes[2].Value))
+							tempContractDetailsMap[string(k.Attributes[0].Value)] = ContractDetails{
+								Address:                 string(k.Attributes[0].Value),
+								LockID:                  lockID,
+								LockedTokensProtoString: string(k.Attributes[2].Value),
+							}
+						}
+					}
+					if k.Type == "wasm" && len(k.Attributes) == 5 {
+						if string(k.Attributes[0].Key) == "_contract_address" && string(k.Attributes[1].Key) == "action" &&
+							string(k.Attributes[2].Key) == "callback-info" && string(k.Attributes[3].Key) == "reply-msg-id" &&
+							string(k.Attributes[4].Key) == "reply-result" {
+							value, ok := tempContractDetailsMap[string(k.Attributes[0].Value)]
+							if ok {
+								value.Action = string(k.Attributes[1].Value)
+								value.CallbackInfo = string(k.Attributes[2].Value)
+								value.ReplyMessageID = string(k.Attributes[3].Value)
+								value.ReplyResult = string(k.Attributes[4].Value)
+								tempContractDetailsMap[string(k.Attributes[0].Value)] = value
+							} else {
+								return fmt.Errorf("unable to find the primitve address in the map at hegiht %d", i)
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if len(tempContractDetailsMap) > 0 {
+			for _, value := range tempContractDetailsMap {
+				tempContractDetails = append(tempContractDetails, value)
+			}
+			lockDetailsByHeight = append(lockDetailsByHeight, LockDetailsByHeight{
+				Height:          i,
+				ContractDetails: tempContractDetails,
+			})
+		}
+	}
+
+	file, err := json.MarshalIndent(lockDetailsByHeight, "", " ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile("lock-details"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
 	}

@@ -44,8 +44,8 @@ type ContractDetails struct {
 }
 
 type AddressSharesInIncentiveContract struct {
-	Shares            string `json:"shares"`
-	LastUpdatedHeight int64  `json:"last_updated_height"`
+	Shares            []string `json:"shares"`
+	LastUpdatedHeight []int64  `json:"last_updated_height"`
 }
 
 func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
@@ -286,8 +286,9 @@ func ParseMints(RPCAddress string, startingHeight, endHeight int64) error {
 	}
 
 	addressToSharesMap := make(map[string]AddressSharesInIncentiveContract)
+
 	for i := startingHeight; i <= endHeight; i++ {
-		time.Sleep(time.Millisecond * 20)
+		time.Sleep(time.Second)
 
 		blockResults, err := rpcClient.BlockResults(context.Background(), &i)
 		if err != nil {
@@ -307,9 +308,16 @@ func ParseMints(RPCAddress string, startingHeight, endHeight int64) error {
 							if len(k.Attributes) > 4 {
 								fmt.Println("found a block with multiple mints at height :", i)
 							}
-							addressToSharesMap[string(k.Attributes[2].Value)] = AddressSharesInIncentiveContract{
-								Shares:            string(k.Attributes[3].Value),
-								LastUpdatedHeight: i,
+							value, ok := addressToSharesMap[string(k.Attributes[2].Value)]
+							if ok {
+								value.Shares = append(value.Shares, string(k.Attributes[3].Value))
+								value.LastUpdatedHeight = append(value.LastUpdatedHeight, i)
+								addressToSharesMap[string(k.Attributes[2].Value)] = value
+							} else {
+								addressToSharesMap[string(k.Attributes[2].Value)] = AddressSharesInIncentiveContract{
+									Shares:            []string{string(k.Attributes[3].Value)},
+									LastUpdatedHeight: []int64{i},
+								}
 							}
 						}
 					}

@@ -43,6 +43,12 @@ type ContractDetails struct {
 	ReplyResult             string `json:"reply_result"`
 }
 
+type MintVaultSharesAtHeight struct {
+	Height    int64    `json:"height"`
+	Addresses []string `json:"addresses"`
+	Shares    []string `json:"shares"`
+}
+
 func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
 	rpcClient, err := http.New(RPCAddress, "/websocket")
 	if err != nil {
@@ -200,7 +206,7 @@ func CheckLockedTokens(RPCAddress string, startingHeight, endHeight int64) error
 	var lockDetailsByHeight []LockDetailsByHeight
 
 	for i := startingHeight; i <= endHeight; i++ {
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond * 50)
 
 		blockResults, err := rpcClient.BlockResults(context.Background(), &i)
 		if err != nil {
@@ -267,6 +273,59 @@ func CheckLockedTokens(RPCAddress string, startingHeight, endHeight int64) error
 	}
 
 	err = os.WriteFile("lock-details"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ParseMints(RPCAddress string, startingHeight, endHeight int64) error {
+	rpcClient, err := http.New(RPCAddress, "/websocket")
+	if err != nil {
+		return err
+	}
+
+	var mintVaultSharesAtHeight []MintVaultSharesAtHeight
+	for i := startingHeight; i <= endHeight; i++ {
+		time.Sleep(time.Millisecond * 50)
+
+		blockResults, err := rpcClient.BlockResults(context.Background(), &i)
+		if err != nil {
+			return err
+		}
+
+		if blockResults.Height == 0 {
+			return fmt.Errorf("cannot read height %d", i)
+		}
+
+		for _, j := range blockResults.TxsResults {
+			if strings.Contains(j.String(), "vault_token_balance") {
+				for _, k := range j.Events {
+					if k.Type == "wasm" && len(k.Attributes) > 3 {
+						if string(k.Attributes[0].Key) == "_contract_address" && string(k.Attributes[1].Key) == "action" &&
+							string(k.Attributes[2].Key) == "user" && string(k.Attributes[3].Key) == "vault_token_balance" {
+							if len(k.Attributes) > 4 {
+								fmt.Println("found a block with multiple mints at height :", i)
+							}
+							mintVaultSharesAtHeight = append(mintVaultSharesAtHeight, MintVaultSharesAtHeight{
+								Height:    i,
+								Addresses: []string{string(k.Attributes[2].Value)},
+								Shares:    []string{string(k.Attributes[3].Value)},
+							})
+						}
+					}
+				}
+			}
+		}
+	}
+
+	file, err := json.MarshalIndent(mintVaultSharesAtHeight, "", " ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile("minted-shares"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
 	}

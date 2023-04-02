@@ -43,9 +43,28 @@ type ContractDetails struct {
 	ReplyResult             string `json:"reply_result"`
 }
 
+type Test struct {
+	Address           string   `json:"address"`
+	Shares            []string `json:"shares"`
+	LastUpdatedHeight []int64  `json:"last_updated_height"`
+}
+
 type AddressSharesInIncentiveContract struct {
 	Shares            []string `json:"shares"`
 	LastUpdatedHeight []int64  `json:"last_updated_height"`
+}
+
+type CallBackInfoWithHeight struct {
+	Height        int64          `json:"height"`
+	CallBackInfos []CallBackInfo `json:"callBackInfos"`
+}
+
+type CallBackInfo struct {
+	ContractAddress    string `json:"contract_address"`
+	Action             string `json:"action"`
+	CallBackInfoString string `json:"call_back_info"`
+	ReplyMsgID         string `json:"reply_msg_id"`
+	ReplyResult        string `json:"reply_result"`
 }
 
 func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
@@ -288,7 +307,7 @@ func ParseMints(RPCAddress string, startingHeight, endHeight int64) error {
 	addressToSharesMap := make(map[string]AddressSharesInIncentiveContract)
 
 	for i := startingHeight; i <= endHeight; i++ {
-		//time.Sleep(time.Millisecond * 50)
+		time.Sleep(time.Millisecond * 50)
 
 		blockResults, err := rpcClient.BlockResults(context.Background(), &i)
 		if err != nil {
@@ -332,6 +351,67 @@ func ParseMints(RPCAddress string, startingHeight, endHeight int64) error {
 	}
 
 	err = os.WriteFile("minted-shares"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CallBackInfos(RPCAddress string, startingHeight, endHeight int64) error {
+	rpcClient, err := http.New(RPCAddress, "/websocket")
+	if err != nil {
+		return err
+	}
+
+	var callBackInfoWithHeight []CallBackInfoWithHeight
+	for i := startingHeight; i <= endHeight; i++ {
+		time.Sleep(time.Millisecond * 20)
+
+		blockResults, err := rpcClient.BlockResults(context.Background(), &i)
+		if err != nil {
+			return err
+		}
+
+		if blockResults.Height == 0 {
+			return fmt.Errorf("cannot read height %d", i)
+		}
+
+		var tempCallBackInfos []CallBackInfo
+		for _, j := range blockResults.TxsResults {
+			if strings.Contains(j.String(), "reply-result") && strings.Contains(j.String(), "callback-info") {
+				for _, k := range j.Events {
+					if k.Type == "wasm" && len(k.Attributes) == 5 {
+						if string(k.Attributes[0].Key) == "_contract_address" && string(k.Attributes[1].Key) == "action" &&
+							string(k.Attributes[2].Key) == "callback-info" && string(k.Attributes[3].Key) == "reply-msg-id" &&
+							string(k.Attributes[4].Key) == "reply-result" {
+							tempCallBackInfos = append(tempCallBackInfos, CallBackInfo{
+								ContractAddress:    string(k.Attributes[0].Value),
+								Action:             string(k.Attributes[1].Value),
+								CallBackInfoString: string(k.Attributes[2].Value),
+								ReplyMsgID:         string(k.Attributes[3].Value),
+								ReplyResult:        string(k.Attributes[4].Value),
+							})
+						}
+					}
+				}
+			}
+		}
+
+		if len(tempCallBackInfos) > 0 {
+			callBackInfoWithHeight = append(callBackInfoWithHeight, CallBackInfoWithHeight{
+				Height:        i,
+				CallBackInfos: tempCallBackInfos,
+			})
+		}
+	}
+
+	file, err := json.MarshalIndent(callBackInfoWithHeight, "", " ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile("callback-infos"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
 	}

@@ -366,6 +366,9 @@ func CallBackInfos(RPCAddress string, startingHeight, endHeight int64) error {
 
 	var callBackInfoWithHeight []CallBackInfoWithHeight
 	for i := startingHeight; i <= endHeight; i++ {
+		if i%1000 == 0 {
+			fmt.Println(i)
+		}
 		time.Sleep(time.Millisecond * 20)
 
 		blockResults, err := rpcClient.BlockResults(context.Background(), &i)

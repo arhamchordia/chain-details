@@ -420,7 +420,7 @@ func CheckString(RPCAddress string, startingHeight, endHeight int64) error {
 		for _, j := range blockResults.TxsResults {
 			for _, k := range j.Events {
 				for _, l := range k.Attributes {
-					if string(l.Key) == "start-unbond-status" && string(l.Value) != "starting-unbond" {
+					if string(l.Key) == "start-unbond-status" && string(l.Value) == "starting-unbond" {
 						fmt.Println(i)
 					}
 				}

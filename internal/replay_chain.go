@@ -404,7 +404,7 @@ func CheckString(RPCAddress string, startingHeight, endHeight int64) error {
 		//if i%1000 == 0 {
 		//	fmt.Println(i)
 		//}
-		time.Sleep(time.Millisecond * 10)
+		time.Sleep(time.Millisecond * 20)
 
 		// get block results
 		blockResults, err := rpcClient.BlockResults(context.Background(), &i)

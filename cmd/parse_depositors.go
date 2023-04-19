@@ -121,10 +121,34 @@ var callBackInfosCmd = &cobra.Command{
 	},
 }
 
+var checkStringCmd = &cobra.Command{
+	Use:   "check_string [rpc-url] start-height end-height",
+	Short: "Queries data for the callback infos",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		rpcURL := args[0]
+		startingHeight, err := strconv.ParseInt(args[1], 10, 64)
+		if err != nil {
+			return err
+		}
+		endHeight, err := strconv.ParseInt(args[2], 10, 64)
+		if err != nil {
+			return err
+		}
+
+		err = internal.CheckString(rpcURL, startingHeight, endHeight)
+		if err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(parseDepositorsBondCmd)
 	rootCmd.AddCommand(parseDepositorsUnbondCmd)
 	rootCmd.AddCommand(parseLockedTokensCmd)
 	rootCmd.AddCommand(parseMintsCmd)
 	rootCmd.AddCommand(callBackInfosCmd)
+	rootCmd.AddCommand(checkStringCmd)
 }

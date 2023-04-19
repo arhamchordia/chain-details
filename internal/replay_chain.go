@@ -393,3 +393,74 @@ func CallBackInfos(RPCAddress string, startingHeight, endHeight int64) error {
 
 	return nil
 }
+
+func CheckString(RPCAddress string, startingHeight, endHeight int64) error {
+	rpcClient, err := http.New(RPCAddress, types.Websocket)
+	if err != nil {
+		return err
+	}
+
+	for i := startingHeight; i <= endHeight; i++ {
+		if i%1000 == 0 {
+			fmt.Println(i)
+		}
+		time.Sleep(time.Millisecond * 10)
+
+		// get block results
+		blockResults, err := rpcClient.BlockResults(context.Background(), &i)
+		if err != nil {
+			return err
+		}
+
+		if blockResults.Height == 0 {
+			return fmt.Errorf("cannot read height %d", i)
+		}
+
+		// iterate all the block transaction results to match the field we are looking for
+		for _, j := range blockResults.TxsResults {
+			for _, k := range j.Events {
+				for _, l := range k.Attributes {
+					if string(l.Key) == "start-unbond-status" || string(l.Key) == "starting-unbond" {
+						fmt.Println(i)
+						return nil
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+//func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
+//	// create an rpcClient with the given RPCAddress
+//	rpcClient, err := http.New(RPCAddress, types.Websocket)
+//	if err != nil {
+//		return err
+//	}
+//
+//	// bonds
+//	var depositorDetails []types.DepositorDetailsBond
+//
+//	for i := startingHeight; i <= endHeight; i++ {
+//		if i%1000 == 0 {
+//			fmt.Println(i)
+//		}
+//		time.Sleep(time.Millisecond * 10)
+//
+//		// get block results
+//		blockResults, err := rpcClient.BlockResults(context.Background(), &i)
+//		if err != nil {
+//			return err
+//		}
+//
+//		if blockResults.Height == 0 {
+//			return fmt.Errorf("cannot read height %d", i)
+//		}
+//
+//		// filter bonds
+//		// filter unbonds
+//		// locked tokens
+//		// mints
+//		// call back infos
+//	}
+//}

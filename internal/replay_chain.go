@@ -401,9 +401,9 @@ func CheckString(RPCAddress string, startingHeight, endHeight int64) error {
 	}
 
 	for i := startingHeight; i <= endHeight; i++ {
-		if i%1000 == 0 {
-			fmt.Println(i)
-		}
+		//if i%1000 == 0 {
+		//	fmt.Println(i)
+		//}
 		time.Sleep(time.Millisecond * 10)
 
 		// get block results
@@ -422,7 +422,7 @@ func CheckString(RPCAddress string, startingHeight, endHeight int64) error {
 				for _, l := range k.Attributes {
 					if string(l.Key) == "start-unbond-status" || string(l.Key) == "starting-unbond" {
 						fmt.Println(i)
-						return nil
+
 					}
 				}
 			}

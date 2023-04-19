@@ -55,6 +55,13 @@ type CallBackInfo struct {
 	ReplyResult        string `json:"reply_result"`
 }
 
+type BeginUnlocking struct {
+	Height          int64  `json:"height"`
+	Step            string `json:"step"`
+	ContractAddress string `json:"contract_address"`
+	PendingMsg      string `json:"pending-msg"`
+}
+
 type ToBeMintedBondsAtHeight struct {
 	Height               int64                  `json:"height"`
 	DepositorDetailsBond []DepositorDetailsBond `json:"depositor_details_bond"`

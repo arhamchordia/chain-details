@@ -121,9 +121,9 @@ var callBackInfosCmd = &cobra.Command{
 	},
 }
 
-var checkStringCmd = &cobra.Command{
-	Use:   "check_string [rpc-url] start-height end-height",
-	Short: "Queries data for the callback infos",
+var beginUnlockingCmd = &cobra.Command{
+	Use:   "begin-unlocking [rpc-url] start-height end-height",
+	Short: "Queries data for begin unlocking",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		rpcURL := args[0]
@@ -136,7 +136,7 @@ var checkStringCmd = &cobra.Command{
 			return err
 		}
 
-		err = internal.CheckString(rpcURL, startingHeight, endHeight)
+		err = internal.BeginUnlocking(rpcURL, startingHeight, endHeight)
 		if err != nil {
 			return err
 		}
@@ -150,5 +150,5 @@ func init() {
 	rootCmd.AddCommand(parseLockedTokensCmd)
 	rootCmd.AddCommand(parseMintsCmd)
 	rootCmd.AddCommand(callBackInfosCmd)
-	rootCmd.AddCommand(checkStringCmd)
+	rootCmd.AddCommand(beginUnlockingCmd)
 }

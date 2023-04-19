@@ -394,16 +394,17 @@ func CallBackInfos(RPCAddress string, startingHeight, endHeight int64) error {
 	return nil
 }
 
-func CheckString(RPCAddress string, startingHeight, endHeight int64) error {
+func BeginUnlocking(RPCAddress string, startingHeight, endHeight int64) error {
 	rpcClient, err := http.New(RPCAddress, types.Websocket)
 	if err != nil {
 		return err
 	}
 
+	var BeginUnlocking []types.BeginUnlocking
 	for i := startingHeight; i <= endHeight; i++ {
-		//if i%1000 == 0 {
-		//	fmt.Println(i)
-		//}
+		if i%1000 == 0 {
+			fmt.Println(i)
+		}
 		time.Sleep(time.Millisecond * 20)
 
 		// get block results
@@ -419,14 +420,32 @@ func CheckString(RPCAddress string, startingHeight, endHeight int64) error {
 		// iterate all the block transaction results to match the field we are looking for
 		for _, j := range blockResults.TxsResults {
 			for _, k := range j.Events {
-				for _, l := range k.Attributes {
-					if string(l.Key) == "start-unbond-status" && string(l.Value) == "starting-unbond" {
-						fmt.Println(i)
+				if k.Type == "wasm" && len(k.Attributes) == 3 {
+					if string(k.Attributes[2].Key) == "step" && strings.Contains(string(k.Attributes[2].Value), "BeginUnlocking") {
+						BeginUnlocking = append(BeginUnlocking, types.BeginUnlocking{
+							Height:          i,
+							Step:            string(k.Attributes[2].Value),
+							ContractAddress: string(k.Attributes[0].Value),
+							PendingMsg:      string(k.Attributes[1].Value),
+						})
 					}
 				}
+
 			}
 		}
 	}
+
+	// marshal and write the contents in a file
+	file, err := json.MarshalIndent(BeginUnlocking, "", " ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile("begin-unlocking"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

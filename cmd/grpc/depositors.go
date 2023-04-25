@@ -1,13 +1,13 @@
-package cmd
+package grpc
 
 import (
-	"github.com/arhamchordia/chain-details/internal"
+	"github.com/arhamchordia/chain-details/internal/grpc"
 	"github.com/spf13/cobra"
 	"strconv"
 )
 
-var parseDepositorsBondCmd = &cobra.Command{
-	Use:   "parse-depositors-bond [rpc-url] start-height end-height",
+var DepositorsBondCmd = &cobra.Command{
+	Use:   "depositors-bond [rpc-url] [start-height] [end-height]",
 	Short: "Queries data for the people depositing to contracts",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -21,7 +21,7 @@ var parseDepositorsBondCmd = &cobra.Command{
 			return err
 		}
 
-		err = internal.ReplayChainBond(rpcURL, startingHeight, endHeight)
+		err = grpc.QueryDepositorsBond(rpcURL, startingHeight, endHeight)
 		if err != nil {
 			return err
 		}
@@ -29,8 +29,8 @@ var parseDepositorsBondCmd = &cobra.Command{
 	},
 }
 
-var parseDepositorsUnbondCmd = &cobra.Command{
-	Use:   "parse-depositors-unbond [rpc-url] start-height end-height",
+var DepositorsUnbondCmd = &cobra.Command{
+	Use:   "depositors-unbond [rpc-url] [start-height] [end-height]",
 	Short: "Queries data for the people depositing to contracts",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -44,7 +44,7 @@ var parseDepositorsUnbondCmd = &cobra.Command{
 			return err
 		}
 
-		err = internal.ReplayChainUnbond(rpcURL, startingHeight, endHeight)
+		err = grpc.QueryDepositorsUnbond(rpcURL, startingHeight, endHeight)
 		if err != nil {
 			return err
 		}
@@ -52,8 +52,8 @@ var parseDepositorsUnbondCmd = &cobra.Command{
 	},
 }
 
-var parseLockedTokensCmd = &cobra.Command{
-	Use:   "parse-locked-tokens [rpc-url] start-height end-height",
+var DepositorsLockedTokensCmd = &cobra.Command{
+	Use:   "depositors-locked-tokens [rpc-url] [start-height] [end-height]",
 	Short: "Queries data for the people depositing to contracts",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -67,7 +67,7 @@ var parseLockedTokensCmd = &cobra.Command{
 			return err
 		}
 
-		err = internal.CheckLockedTokens(rpcURL, startingHeight, endHeight)
+		err = grpc.QueryDepositorsLockedTokens(rpcURL, startingHeight, endHeight)
 		if err != nil {
 			return err
 		}
@@ -75,8 +75,8 @@ var parseLockedTokensCmd = &cobra.Command{
 	},
 }
 
-var parseMintsCmd = &cobra.Command{
-	Use:   "parse-mints [rpc-url] start-height end-height",
+var DepositorsMintsCmd = &cobra.Command{
+	Use:   "depositors-mints [rpc-url] [start-height] [end-height]",
 	Short: "Queries data for the people received minted shares",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -90,7 +90,7 @@ var parseMintsCmd = &cobra.Command{
 			return err
 		}
 
-		err = internal.ParseMints(rpcURL, startingHeight, endHeight)
+		err = grpc.QueryDepositorsMints(rpcURL, startingHeight, endHeight)
 		if err != nil {
 			return err
 		}
@@ -98,8 +98,8 @@ var parseMintsCmd = &cobra.Command{
 	},
 }
 
-var callBackInfosCmd = &cobra.Command{
-	Use:   "callback-infos [rpc-url] start-height end-height",
+var DepositorsCallbackInfoCmd = &cobra.Command{
+	Use:   "depositors-callback-info [rpc-url] [start-height] [end-height]",
 	Short: "Queries data for the callback infos",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -113,7 +113,7 @@ var callBackInfosCmd = &cobra.Command{
 			return err
 		}
 
-		err = internal.CallBackInfos(rpcURL, startingHeight, endHeight)
+		err = grpc.QueryDepositorsCallbackInfo(rpcURL, startingHeight, endHeight)
 		if err != nil {
 			return err
 		}
@@ -121,8 +121,8 @@ var callBackInfosCmd = &cobra.Command{
 	},
 }
 
-var beginUnlockingCmd = &cobra.Command{
-	Use:   "begin-unlocking [rpc-url] start-height end-height",
+var DepositorsBeginUnlockingCmd = &cobra.Command{
+	Use:   "depositors-begin-unlocking [rpc-url] [start-height] [end-height]",
 	Short: "Queries data for begin unlocking",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -136,19 +136,10 @@ var beginUnlockingCmd = &cobra.Command{
 			return err
 		}
 
-		err = internal.BeginUnlocking(rpcURL, startingHeight, endHeight)
+		err = grpc.QueryDepositorsBeginUnlocking(rpcURL, startingHeight, endHeight)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(parseDepositorsBondCmd)
-	rootCmd.AddCommand(parseDepositorsUnbondCmd)
-	rootCmd.AddCommand(parseLockedTokensCmd)
-	rootCmd.AddCommand(parseMintsCmd)
-	rootCmd.AddCommand(callBackInfosCmd)
-	rootCmd.AddCommand(beginUnlockingCmd)
 }

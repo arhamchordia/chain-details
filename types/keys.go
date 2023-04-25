@@ -31,6 +31,7 @@ const (
 
 	Message           = "message"
 	Wasm              = "wasm"
+	BondID            = "bond_id"
 	CoinSpent         = "coin_spent"
 	CoinReceived      = "coin_received"
 	ContractAddress   = "_contract_address"

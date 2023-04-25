@@ -1,8 +1,12 @@
-package internal
+package grpc
 
 import (
 	"context"
+	"crypto/tls"
+	"github.com/arhamchordia/chain-details/internal"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -10,6 +14,41 @@ import (
 
 	"github.com/arhamchordia/chain-details/types"
 )
+
+func QueryValidatorsData(grpcUrl, accountPrefix string) error {
+	// initialise config for grpc connection
+	config := &tls.Config{
+		InsecureSkipVerify: false,
+	}
+
+	// Create a connection to the gRPC server.
+	grpcConn, err := grpc.Dial(
+		grpcUrl,
+		grpc.WithTransportCredentials(credentials.NewTLS(config)),
+	)
+	if err != nil {
+		return err
+	}
+	defer grpcConn.Close()
+
+	// send a query only when connection state is ready
+	for {
+		// wait for 4 milliseconds for grpc to connect
+		time.Sleep(4 * time.Millisecond)
+
+		if grpcConn.GetState().String() == "READY" {
+			err = ParseValidators(grpcConn, accountPrefix)
+			if err != nil {
+				return err
+			}
+			break
+		} else if grpcConn.GetState().String() == "TRANSIENT_FAILURE" {
+			break
+		}
+	}
+
+	return nil
+}
 
 // ParseValidators parses all the requested information
 // returns an error if any of the steps fail
@@ -62,7 +101,7 @@ func ParseValidators(grpcConn *grpc.ClientConn, accountPrefix string) error {
 		data = append(data, temp)
 	}
 
-	err = WriteCSV(
+	err = internal.WriteCSV(
 		types.ValidatorsInfoFileName,
 		[]string{
 			types.HeaderMoniker,

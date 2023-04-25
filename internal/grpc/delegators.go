@@ -1,7 +1,11 @@
-package internal
+package grpc
 
 import (
 	"context"
+	"crypto/tls"
+	"github.com/arhamchordia/chain-details/internal"
+	"google.golang.org/grpc/credentials"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -10,6 +14,42 @@ import (
 
 	"github.com/arhamchordia/chain-details/types"
 )
+
+func QueryDelegatorsData(grpcUrl string) error {
+	// initialise config for grpc connection
+	config := &tls.Config{
+		InsecureSkipVerify: false,
+	}
+
+	// Create a connection to the gRPC server.
+	grpcConn, err := grpc.Dial(
+		grpcUrl,
+		grpc.WithTransportCredentials(credentials.NewTLS(config)),
+	)
+	if err != nil {
+		return err
+	}
+	defer grpcConn.Close()
+
+	// send a query only when connection state is ready
+	for {
+		// wait for 4 milliseconds for grpc to connect
+		time.Sleep(4 * time.Millisecond)
+
+		// trigger action on the basis of state of the connection
+		if grpcConn.GetState().String() == "READY" {
+			err = ParseDelegators(grpcConn)
+			if err != nil {
+				return err
+			}
+			break
+		} else if grpcConn.GetState().String() == "TRANSIENT_FAILURE" {
+			break
+		}
+	}
+
+	return nil
+}
 
 // ParseDelegators parses all the requested information
 // returns an error if any of the steps fail
@@ -83,7 +123,7 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 		}
 	}
 
-	err = WriteCSV(
+	err = internal.WriteCSV(
 		types.DelegatorDelegationEntriesFileName,
 		[]string{
 			types.HeaderDelegator,
@@ -101,7 +141,7 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 		delegatorShares = append(delegatorShares, []string{key, value.String()})
 	}
 
-	err = WriteCSV(
+	err = internal.WriteCSV(
 		types.DelegatorSharesFileName,
 		[]string{
 			types.HeaderDelegator,

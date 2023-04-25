@@ -1,26 +1,21 @@
-package cmd
+package grpc
 
 import (
+	"github.com/arhamchordia/chain-details/internal/grpc"
 	"github.com/spf13/cobra"
-
-	"github.com/arhamchordia/chain-details/internal"
 )
 
-var parseDelegatorsCmd = &cobra.Command{
+var DelegatorsDataCmd = &cobra.Command{
 	Use:   "delegators-data [grpc-url]",
 	Short: "Generates csv files with delegators data",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		grpcUrl := args[0]
 
-		err := internal.QueryDelegatorsData(grpcUrl)
+		err := grpc.QueryDelegatorsData(grpcUrl)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(parseDelegatorsCmd)
 }

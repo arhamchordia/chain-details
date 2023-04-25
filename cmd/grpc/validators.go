@@ -1,12 +1,11 @@
-package cmd
+package grpc
 
 import (
+	"github.com/arhamchordia/chain-details/internal/grpc"
 	"github.com/spf13/cobra"
-
-	"github.com/arhamchordia/chain-details/internal"
 )
 
-var parseValidatorsCmd = &cobra.Command{
+var ValidatorsDataCmd = &cobra.Command{
 	Use:   "validators-data [grpc-url] [account-address-prefix]",
 	Short: "Generates csv file with validators data",
 	Args:  cobra.ExactArgs(2),
@@ -14,14 +13,10 @@ var parseValidatorsCmd = &cobra.Command{
 		grpcUrl := args[0]
 		accountPrefix := args[1]
 
-		err := internal.QueryValidatorsData(grpcUrl, accountPrefix)
+		err := grpc.QueryValidatorsData(grpcUrl, accountPrefix)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(parseValidatorsCmd)
 }

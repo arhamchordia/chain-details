@@ -1,16 +1,44 @@
-package internal
+package grpc
 
 import (
-	"strconv"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
+	"encoding/json"
+	"github.com/arhamchordia/chain-details/internal"
 	"github.com/arhamchordia/chain-details/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"io"
+	"net/http"
+	"strconv"
 )
 
-// ParseVestingAccounts parses all the vesting accounts in genesis file and
+func QueryGenesisJSON(jsonURL, denom string) error {
+	res, err := http.Get(jsonURL)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	var response types.Genesis
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return err
+	}
+
+	err = parseVestingAccounts(response.AppState.Auth.Accounts, denom)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// parseVestingAccounts parses all the vesting accounts in genesis file and
 // returns and error if anything fails
-func ParseVestingAccounts(vestingAccounts []types.Account, denom string) error {
+func parseVestingAccounts(vestingAccounts []types.Account, denom string) error {
 	// initialise all types of vesting account arrays
 	var (
 		delayedVestingAccounts    []types.DelayedVestingAccount
@@ -173,7 +201,7 @@ func ParseVestingAccounts(vestingAccounts []types.Account, denom string) error {
 		)
 	}
 
-	err := WriteCSV(
+	err := internal.WriteCSV(
 		types.GenesisAccountAnalysisFileName,
 		[]string{
 			types.HeaderAddress,

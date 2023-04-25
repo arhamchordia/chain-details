@@ -1,8 +1,8 @@
-package internal_test
+package grpc_test
 
 import (
 	"crypto/tls"
-	"github.com/arhamchordia/chain-details/internal"
+	internalgrpc "github.com/arhamchordia/chain-details/internal/grpc"
 	"github.com/arhamchordia/chain-details/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -53,7 +53,7 @@ func TestParseValidators(t *testing.T) {
 		}
 		defer testGrpcConn.Close()
 
-		err = internal.ParseValidators(testGrpcConn, tc.prefix)
+		err = internalgrpc.ParseValidators(testGrpcConn, tc.prefix)
 		if tc.expectErrorParseValidators {
 			require.Equal(t, err.Error(), tc.errorParseValidators)
 		}

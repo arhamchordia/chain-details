@@ -8,7 +8,7 @@ import (
 var RawQuery string
 
 var RawQueryCmd = &cobra.Command{
-	Use:   "bigquery",
+	Use:   "raw",
 	Short: "Execute a BigQuery SQL query",
 	Long:  `This command allows you to execute a SQL query against Google Cloud BigQuery. Provide the SQL query with the --query flag.`,
 	RunE: func(cmd *cobra.Command, args []string) error {

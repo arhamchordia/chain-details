@@ -12,38 +12,38 @@ import (
 func QueryDepositorsBond() error {
 	bqQuerier, _ := internal.NewBigQueryQuerier()
 
-	it, err := bqQuerier.ExecuteQuery("SELECT * " +
+	// TODO: This query is giving 2 rows per result, one with the sender and one with the amount/denom. Merge them.
+	it, err := bqQuerier.ExecuteQuery("SELECT " +
+		"	j1.block_height, " +
+		"	j1.tx_id, " +
+		"	j1.event_index, " +
+		"	j1.event_type, " +
+		"	j1.attribute_key, " +
+		"	j1.attribute_value, " +
+		"	j2.attribute_value AS sender, " +
+		"	j3.attribute_value AS coin_spent " +
 		"FROM `numia-data.quasar.quasar_event_attributes` " +
-		"WHERE `event_type` = 'message'" +
-		"	AND `attribute_key` = 'action'" +
-		"	AND `attribute_value` = '/cosmwasm.wasm.v1.MsgExecuteContract'" +
-		"	AND EXISTS (" +
-		"		SELECT 1" +
-		"		FROM `numia-data.quasar.quasar_event_attributes` j1" +
-		"		WHERE j1.`tx_id` = `numia-data.quasar.quasar_event_attributes`.`tx_id`" +
-		"			AND j1.`block_height` = `numia-data.quasar.quasar_event_attributes`.`block_height`" +
-		"			AND j1.`event_index` = `numia-data.quasar.quasar_event_attributes`.`event_index` + 1" +
-		"			AND j1.`event_type` = 'message'" +
-		"			AND j1.`attribute_value` = 'wasm'" +
-		"		)" +
-		"		AND EXISTS (" +
-		"			SELECT 1" +
-		"			FROM `numia-data.quasar.quasar_event_attributes` j2" +
-		"			WHERE j2.`tx_id` = `numia-data.quasar.quasar_event_attributes`.`tx_id`" +
-		"				AND j2.`block_height` = `numia-data.quasar.quasar_event_attributes`.`block_height`" +
-		"				AND j2.`event_index` = `numia-data.quasar.quasar_event_attributes`.`event_index` + 2" +
-		"				AND j2.`event_type` = 'coin_spent'" +
-		"			)" +
-		"			AND EXISTS (" +
-		"				SELECT 1" +
-		"				FROM `numia-data.quasar.quasar_event_attributes` j3" +
-		"				WHERE j3.`tx_id` = `numia-data.quasar.quasar_event_attributes`.`tx_id`" +
-		"					AND j3.`block_height` = `numia-data.quasar.quasar_event_attributes`.`block_height`" +
-		"					AND j3.`event_index` = `numia-data.quasar.quasar_event_attributes`.`event_index` + 3" +
-		"					AND j3.`event_type` = 'coin_received'" +
-		"					AND j3.`attribute_value` = 'quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu'" +
-		"			)" +
-		"		ORDER BY block_height DESC")
+		"JOIN `numia-data.quasar.quasar_event_attributes` j1 " +
+		"	ON j1.tx_id = `numia-data.quasar.quasar_event_attributes`.tx_id " +
+		"	AND j1.block_height = `numia-data.quasar.quasar_event_attributes`.block_height " +
+		"	AND j1.event_index = `numia-data.quasar.quasar_event_attributes`.event_index + 1 " + // TODO: I don't like this + 1
+		"	AND j1.event_type = 'message' " +
+		"	AND j1.attribute_value = 'wasm' " +
+		"JOIN `numia-data.quasar.quasar_event_attributes` j2 " +
+		"	ON j2.tx_id = `numia-data.quasar.quasar_event_attributes`.tx_id " +
+		"	AND j2.block_height = `numia-data.quasar.quasar_event_attributes`.block_height " +
+		"	AND j2.event_index = `numia-data.quasar.quasar_event_attributes`.event_index + 2" + // TODO: I don't like this + 2
+		"	AND j2.event_type = 'coin_spent' " +
+		"	JOIN `numia-data.quasar.quasar_event_attributes` j3 " +
+		"ON j3.tx_id = `numia-data.quasar.quasar_event_attributes`.tx_id" +
+		"	AND j3.block_height = `numia-data.quasar.quasar_event_attributes`.block_height " +
+		"	AND j3.event_index = `numia-data.quasar.quasar_event_attributes`.event_index + 3 " + // TODO: I don't like this + 3
+		"	AND j3.event_type = 'coin_received' " +
+		"	AND j3.attribute_value = 'quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu' " + // TODO: Make this dynamic by argument or flag
+		"WHERE `numia-data.quasar.quasar_event_attributes`.event_type = 'message' " +
+		"	AND `numia-data.quasar.quasar_event_attributes`.attribute_key = 'action' " +
+		"	AND `numia-data.quasar.quasar_event_attributes`.attribute_value = '/cosmwasm.wasm.v1.MsgExecuteContract' " +
+		"ORDER BY `numia-data.quasar.quasar_event_attributes`.block_height DESC")
 	if err != nil {
 		log.Fatalf("Failed to execute BigQuery query: %v", err)
 	}

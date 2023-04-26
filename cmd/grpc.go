@@ -23,8 +23,8 @@ func init() {
 
 	grpcCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "csv", "Output format for generated files (csv/json)")
 
-	RegisterDelegatorsCommands(grpcCmd)
-	RegisterDepositorsCommands(grpcCmd)
-	RegisterGenesisCommands(grpcCmd)
-	RegisterValidatorsCommands(grpcCmd)
+	GRPCRegisterDelegatorsCmd(grpcCmd)
+	GRPCRegisterDepositorsCmd(grpcCmd)
+	GRPCRegisterGenesisCmd(grpcCmd)
+	GRPCRegisterValidatorsCmd(grpcCmd)
 }

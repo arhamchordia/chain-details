@@ -10,24 +10,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var SampleQuery string
+var RawQuery string
 
 // SampleCmd represents the bigquery command
-var SampleCmd = &cobra.Command{
+var RawQueryCmd = &cobra.Command{
 	Use:   "bigquery",
 	Short: "Execute a BigQuery SQL query",
 	Long:  `This command allows you to execute a SQL query against Google Cloud BigQuery. Provide the SQL query with the --query flag.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		bqQuerier, _ := internal.NewBigQueryQuerier()
 
-		it, err := bqQuerier.ExecuteQuery(SampleQuery)
+		it, err := bqQuerier.ExecuteQuery(RawQuery)
 		if err != nil {
 			log.Fatalf("Failed to execute BigQuery query: %v", err)
 		}
 		defer bqQuerier.Close()
 
 		for {
-			var row bigquery.RowIterator
+			var row []bigquery.Value
 			err := it.Next(&row)
 			if err == iterator.Done {
 				break
@@ -36,7 +36,10 @@ var SampleCmd = &cobra.Command{
 				log.Fatalf("Failed to iterate results: %v", err)
 			}
 
-			fmt.Println(row)
+			for _, val := range row {
+				fmt.Printf("%v ", val)
+			}
+			fmt.Println()
 		}
 	},
 }

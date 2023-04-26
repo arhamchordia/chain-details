@@ -5,15 +5,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func RegisterSampleCommandsBigQuery(parentCmd *cobra.Command) {
-	bigquery.SampleCmd.Flags().StringVarP(&bigquery.SampleQuery, "query", "q", "", "SQL query to execute against BigQuery (required)")
-	err := bigquery.SampleCmd.MarkFlagRequired("query")
+func BigQueryRegisterRawQueryCmd(parentCmd *cobra.Command) {
+	bigquery.RawQueryCmd.Flags().StringVarP(&bigquery.RawQuery, "query", "q", "", "SQL query to execute against BigQuery (required)")
+	err := bigquery.RawQueryCmd.MarkFlagRequired("query")
 	if err != nil {
 		return
 	}
-	parentCmd.AddCommand(bigquery.SampleCmd)
+	parentCmd.AddCommand(bigquery.RawQueryCmd)
 }
 
-func RegisterDelegatorsCommandsBigQuery(parentCmd *cobra.Command) {
+func BigQueryRegisterDelegatorsCmd(parentCmd *cobra.Command) {
 	parentCmd.AddCommand(bigquery.DelegatorsDataCmd)
 }

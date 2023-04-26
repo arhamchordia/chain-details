@@ -5,11 +5,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func RegisterDelegatorsCommands(parentCmd *cobra.Command) {
+func GRPCRegisterDelegatorsCmd(parentCmd *cobra.Command) {
 	parentCmd.AddCommand(grpc.DelegatorsDataCmd)
 }
 
-func RegisterDepositorsCommands(parentCmd *cobra.Command) {
+func GRPCRegisterDepositorsCmd(parentCmd *cobra.Command) {
 	parentCmd.AddCommand(grpc.DepositorsBondCmd)
 	parentCmd.AddCommand(grpc.DepositorsUnbondCmd)
 	parentCmd.AddCommand(grpc.DepositorsLockedTokensCmd)
@@ -18,10 +18,10 @@ func RegisterDepositorsCommands(parentCmd *cobra.Command) {
 	parentCmd.AddCommand(grpc.DepositorsBeginUnlockingCmd)
 }
 
-func RegisterGenesisCommands(parentCmd *cobra.Command) {
+func GRPCRegisterGenesisCmd(parentCmd *cobra.Command) {
 	parentCmd.AddCommand(grpc.GenesisVestingAccountsCmd)
 }
 
-func RegisterValidatorsCommands(parentCmd *cobra.Command) {
+func GRPCRegisterValidatorsCmd(parentCmd *cobra.Command) {
 	parentCmd.AddCommand(grpc.ValidatorsDataCmd)
 }

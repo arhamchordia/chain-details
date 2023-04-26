@@ -25,4 +25,5 @@ func init() {
 
 	BigQueryRegisterRawQueryCmd(bigQueryCmd)
 	BigQueryRegisterDelegatorsCmd(bigQueryCmd)
+	BigQueryRegisterDepositorsCmd(bigQueryCmd)
 }

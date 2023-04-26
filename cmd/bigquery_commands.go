@@ -17,3 +17,7 @@ func BigQueryRegisterRawQueryCmd(parentCmd *cobra.Command) {
 func BigQueryRegisterDelegatorsCmd(parentCmd *cobra.Command) {
 	parentCmd.AddCommand(bigquery.DelegatorsDataCmd)
 }
+
+func BigQueryRegisterDepositorsCmd(parentCmd *cobra.Command) {
+	parentCmd.AddCommand(bigquery.DepositorsBondCmd)
+}

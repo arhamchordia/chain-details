@@ -24,6 +24,5 @@ func init() {
 	bigQueryCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "csv", "Output format for generated files (csv/json)")
 
 	BigQueryRegisterRawQueryCmd(bigQueryCmd)
-	BigQueryRegisterDelegatorsCmd(bigQueryCmd)
 	BigQueryRegisterDepositorsCmd(bigQueryCmd)
 }

@@ -124,7 +124,7 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 	}
 
 	err = internal.WriteCSV(
-		types.DelegatorDelegationEntriesFileName,
+		types.PrefixGRPC+types.DelegatorDelegationEntriesFileName,
 		[]string{
 			types.HeaderDelegator,
 			types.HeaderValidator,
@@ -142,7 +142,7 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 	}
 
 	err = internal.WriteCSV(
-		types.DelegatorSharesFileName,
+		types.PrefixGRPC+types.DelegatorSharesFileName,
 		[]string{
 			types.HeaderDelegator,
 			types.HeaderShares,

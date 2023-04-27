@@ -99,6 +99,7 @@ func QueryDepositorsBond(RPCAddress string, startingHeight, endHeight int64) err
 		return err
 	}
 
+	// TODO add prefix and rename
 	err = os.WriteFile("replay"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
@@ -163,6 +164,7 @@ func QueryDepositorsUnbond(RPCAddress string, startingHeight, endHeight int64) e
 		return err
 	}
 
+	// TODO add prefix and rename
 	err = os.WriteFile("replay-unbond"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
@@ -251,6 +253,7 @@ func QueryDepositorsLockedTokens(RPCAddress string, startingHeight, endHeight in
 		return err
 	}
 
+	// TODO add prefix and rename
 	err = os.WriteFile("lock-details"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
@@ -316,6 +319,7 @@ func QueryDepositorsMints(RPCAddress string, startingHeight, endHeight int64) er
 		return err
 	}
 
+	// TODO add prefix and rename
 	err = os.WriteFile("minted-shares"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
@@ -386,6 +390,7 @@ func QueryDepositorsCallbackInfo(RPCAddress string, startingHeight, endHeight in
 		return err
 	}
 
+	// TODO add prefix and rename
 	err = os.WriteFile("callback-infos"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
@@ -441,6 +446,7 @@ func QueryDepositorsBeginUnlocking(RPCAddress string, startingHeight, endHeight 
 		return err
 	}
 
+	// TODO add prefix and rename
 	err = os.WriteFile("begin-unlocking"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err

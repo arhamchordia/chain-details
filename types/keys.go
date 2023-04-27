@@ -10,6 +10,9 @@ import (
 )
 
 const (
+	PrefixGRPC     = "grpc_"
+	PrefixBigQuery = "bigquery_"
+
 	ValidatorsInfoFileName             = "validators_info"
 	DelegatorDelegationEntriesFileName = "delegator_delegation_entries"
 	DelegatorSharesFileName            = "delegator_shares"

@@ -202,7 +202,7 @@ func parseVestingAccounts(vestingAccounts []types.Account, denom string) error {
 	}
 
 	err := internal.WriteCSV(
-		types.GenesisAccountAnalysisFileName,
+		types.PrefixGRPC+types.GenesisAccountAnalysisFileName,
 		[]string{
 			types.HeaderAddress,
 			types.HeaderOriginalVesting,

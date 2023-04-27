@@ -102,7 +102,7 @@ func ParseValidators(grpcConn *grpc.ClientConn, accountPrefix string) error {
 	}
 
 	err = internal.WriteCSV(
-		types.ValidatorsInfoFileName,
+		types.PrefixGRPC+types.ValidatorsInfoFileName,
 		[]string{
 			types.HeaderMoniker,
 			types.HeaderPercentageWeight,

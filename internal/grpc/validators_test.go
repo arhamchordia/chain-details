@@ -58,7 +58,7 @@ func TestParseValidators(t *testing.T) {
 			require.Equal(t, err.Error(), tc.errorParseValidators)
 		}
 
-		err = os.Remove(types.ValidatorsInfoFileName + ".csv")
+		err = os.Remove(types.PrefixGRPC + types.ValidatorsInfoFileName + ".csv")
 		if tc.expectErrorDeleteFile {
 			require.Equal(t, err.Error(), tc.errorDeleteFile)
 		}

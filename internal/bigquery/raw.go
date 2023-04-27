@@ -4,6 +4,7 @@ import (
 	"cloud.google.com/go/bigquery"
 	"fmt"
 	"github.com/arhamchordia/chain-details/internal"
+	"github.com/arhamchordia/chain-details/types"
 	"google.golang.org/api/iterator"
 	"log"
 )
@@ -45,7 +46,7 @@ func RawQuery(RawQuery string) error {
 		headerRow[i] = fmt.Sprintf("column_%d", i+1)
 	}
 
-	err = internal.WriteCSV("bigquery_rawquery", headerRow, rows)
+	err = internal.WriteCSV(types.PrefixBigQuery+"raw", headerRow, rows)
 	if err != nil {
 		return err
 	}

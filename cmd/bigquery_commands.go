@@ -16,4 +16,5 @@ func BigQueryRegisterRawQueryCmd(parentCmd *cobra.Command) {
 
 func BigQueryRegisterDepositorsCmd(parentCmd *cobra.Command) {
 	parentCmd.AddCommand(bigquery.DepositorsBondCmd)
+	parentCmd.AddCommand(bigquery.DepositorsUnbondCmd)
 }

@@ -1,4 +1,4 @@
-package bigquery
+package vaults
 
 import (
 	"cloud.google.com/go/bigquery"
@@ -10,7 +10,7 @@ import (
 )
 
 // QueryDepositorsBond returns a file with the bond events in all the blocks given as startingHeight and endHeight
-func QueryDepositorsBond() error {
+func QueryBond() error {
 	bqQuerier, _ := internal.NewBigQueryQuerier()
 
 	// TODO: This query is giving 2 rows per result, one with the sender and one with the amount/denom. Merge them.
@@ -78,7 +78,7 @@ func QueryDepositorsBond() error {
 		headerRow[i] = fmt.Sprintf("column_%d", i+1)
 	}
 
-	err = internal.WriteCSV(types.PrefixBigQuery+"depositors_bond", headerRow, rows)
+	err = internal.WriteCSV(types.PrefixBigQuery+"vaults_bond", headerRow, rows)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func QueryDepositorsBond() error {
 	return nil
 }
 
-func QueryDepositorsUnbond() error {
+func QueryUnbond() error {
 	bqQuerier, _ := internal.NewBigQueryQuerier()
 
 	// TODO query
@@ -124,7 +124,53 @@ func QueryDepositorsUnbond() error {
 		headerRow[i] = fmt.Sprintf("column_%d", i+1)
 	}
 
-	err = internal.WriteCSV(types.PrefixBigQuery+"depositors_unbond", headerRow, rows)
+	err = internal.WriteCSV(types.PrefixBigQuery+"vaults_unbond", headerRow, rows)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func QueryWithdraw() error {
+	bqQuerier, _ := internal.NewBigQueryQuerier()
+
+	// TODO query
+	it, err := bqQuerier.ExecuteQuery("")
+	if err != nil {
+		log.Fatalf("Failed to execute BigQuery query: %v", err)
+	}
+	defer bqQuerier.Close()
+
+	var rows [][]string
+
+	for {
+		var row []bigquery.Value
+		err := it.Next(&row)
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			log.Fatalf("Failed to iterate results: %v", err)
+		}
+
+		var csvRow []string
+		for _, val := range row {
+			csvRow = append(csvRow, fmt.Sprintf("%v", val))
+		}
+		rows = append(rows, csvRow)
+	}
+
+	if len(rows) == 0 {
+		log.Fatalf("No rows returned by query")
+	}
+
+	headerRow := make([]string, len(rows[0]))
+	for i := range rows[0] {
+		headerRow[i] = fmt.Sprintf("column_%d", i+1)
+	}
+
+	err = internal.WriteCSV(types.PrefixBigQuery+"vaults_withdraw", headerRow, rows)
 	if err != nil {
 		return err
 	}

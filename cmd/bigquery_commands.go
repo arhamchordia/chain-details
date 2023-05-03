@@ -16,8 +16,8 @@ func BigQueryRegisterRawQueryCmd(parentCmd *cobra.Command) {
 }
 
 func BigQueryRegisterTransactionsCmd(parentCmd *cobra.Command) {
-	bigquery.RawQueryCmd.Flags().StringVarP(&bigquery.AddressQuery, "address", "a", "", "Address to query (required)")
-	err := bigquery.RawQueryCmd.MarkFlagRequired("query")
+	bigquery.TransactionsCmd.Flags().StringVarP(&bigquery.AddressQuery, "address", "a", "", "Address to query (required)")
+	err := bigquery.TransactionsCmd.MarkFlagRequired("address")
 	if err != nil {
 		return
 	}

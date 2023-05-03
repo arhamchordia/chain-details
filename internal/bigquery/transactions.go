@@ -12,8 +12,14 @@ import (
 func TransactionsQuery(AddressQuery string) error {
 	bqQuerier, _ := internal.NewBigQueryQuerier()
 
-	// TODO query with dynamic address taken by argument
-	it, err := bqQuerier.ExecuteQuery("" + AddressQuery)
+	it, err := bqQuerier.ExecuteQuery("SELECT * " +
+		"FROM `numia-data.quasar.quasar_tx_messages` " +
+		"WHERE (" +
+		"	SELECT COUNT(*)" +
+		"	FROM UNNEST(REGEXP_EXTRACT_ALL(TO_JSON_STRING(message), r':\\s*\"([^\"]*)\"')) AS json_values" +
+		"	WHERE json_values = '" + AddressQuery + "'" +
+		") > 0 " +
+		"ORDER BY block_height ASC")
 	if err != nil {
 		log.Fatalf("Failed to execute BigQuery query: %v", err)
 	}

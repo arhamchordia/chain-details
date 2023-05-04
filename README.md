@@ -148,10 +148,24 @@ should be enclosed in double quotes and any backticks within the query must be e
 go run main.go bigquery raw --query "SELECT * FROM \`numia-data.quasar.quasar_transactions\` ORDER BY \`block_height\` DESC LIMIT 1000"
 ```
 
-#### Delegators
+#### Quasar Vault Actions
 
-#### Depositors
+(--flags) are optionals
 
-#### Genesis
+##### Bond
 
-#### Validators
+```bash
+go run main.go bigquery bond (--address)
+```
+
+##### Unbond
+
+```bash
+go run main.go bigquery unbond (--address)
+```
+
+##### Withdraw
+
+```bash
+go run main.go bigquery withdraw (--address)
+```

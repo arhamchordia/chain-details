@@ -12,7 +12,7 @@ import (
 func TransactionsQuery(AddressQuery string) error {
 	bqQuerier, _ := internal.NewBigQueryQuerier()
 
-	it, err := bqQuerier.ExecuteQuery("SELECT * " +
+	it, err := bqQuerier.ExecuteQuery("SELECT block_height, tx_id, message, ingestion_timestamp  " +
 		"FROM `numia-data.quasar.quasar_tx_messages` " +
 		"WHERE (" +
 		"	SELECT COUNT(*)" +

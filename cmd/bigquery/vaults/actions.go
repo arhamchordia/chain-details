@@ -13,7 +13,7 @@ var BondCmd = &cobra.Command{
 	Long:  `This command allows you to query all the bond actions to the Quasar Vault. Provide optionally the address to filter for with the --address flag.`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := vaults.QueryBond()
+		err := vaults.QueryBond(AddressQuery)
 		if err != nil {
 			return err
 		}
@@ -27,7 +27,7 @@ var UnbondCmd = &cobra.Command{
 	Long:  `This command allows you to query all the unbond actions to the Quasar Vault. Provide optionally the address to filter for with the --address flag.`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := vaults.QueryUnbond()
+		err := vaults.QueryUnbond(AddressQuery)
 		if err != nil {
 			return err
 		}
@@ -41,7 +41,7 @@ var WithdrawCmd = &cobra.Command{
 	Long:  `This command allows you to query all the withdraw actions to the Quasar Vault. Provide optionally the address to filter for with the --address flag.`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := vaults.QueryUnbond()
+		err := vaults.QueryWithdraw(AddressQuery)
 		if err != nil {
 			return err
 		}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/arhamchordia/chain-details/internal"
 	"github.com/arhamchordia/chain-details/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/api/iterator"
 	"log"
 )
@@ -12,12 +13,17 @@ import (
 func TransactionsQuery(AddressQuery string) error {
 	bqQuerier, _ := internal.NewBigQueryQuerier()
 
+	addr, err := sdk.AccAddressFromBech32(AddressQuery)
+	if err != nil {
+		return err
+	}
+
 	it, err := bqQuerier.ExecuteQuery("SELECT block_height, tx_id, message, ingestion_timestamp  " +
 		"FROM `numia-data.quasar.quasar_tx_messages` " +
 		"WHERE (" +
 		"	SELECT COUNT(*)" +
 		"	FROM UNNEST(REGEXP_EXTRACT_ALL(TO_JSON_STRING(message), r':\\s*\"([^\"]*)\"')) AS json_values" +
-		"	WHERE json_values = '" + AddressQuery + "'" +
+		"	WHERE json_values = '" + addr.String() + "'" +
 		") > 0 " +
 		"ORDER BY block_height ASC")
 	if err != nil {

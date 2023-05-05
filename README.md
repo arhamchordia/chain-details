@@ -139,6 +139,8 @@ go run main.go grpc validators-data [grpc-url] [account-address-prefix]
 
 ### BigQuery
 
+(--flags) are optionals
+
 #### Raw Query
 
 `bigquery raw`: Executes a raw SQL query on Google Cloud BigQuery and generates a file with the results. The query
@@ -150,28 +152,30 @@ go run main.go bigquery raw --query "SELECT * FROM \`numia-data.quasar.quasar_tr
 
 #### Quasar Transactions
 
+`bigquery transactions`: Executes a SQL query to scrape all the transactions for a given account address and generates a file with the results. Provide the address to query with the --address flag.
 ```bash
 go run main.go bigquery transactions --address <account_address>
 ```
 
 #### Quasar Vault Actions
 
-(--flags) are optionals
-
 ##### Bond
 
+`bigquery bond`: Executes a SQL query to scrape all the bond transactions for a given account address and generates a file with the results. Providing the address to query with the --address flag is optional.
 ```bash
 go run main.go bigquery bond (--address <account_address>)
 ```
 
 ##### Unbond
 
+`bigquery unbond`: Executes a SQL query to scrape all the unbond transactions for a given account address and generates a file with the results. Providing the address to query with the --address flag is optional.
 ```bash
 go run main.go bigquery unbond (--address <account_address>)
 ```
 
 ##### Withdraw
 
+`bigquery withdraw`: Executes a SQL query to scrape all the withdrawal transactions for a given account address and generates a file with the results. Providing the address to query with the --address flag is optional.
 ```bash
 go run main.go bigquery withdraw (--address <account_address>)
 ```

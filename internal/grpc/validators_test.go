@@ -3,7 +3,7 @@ package grpc_test
 import (
 	"crypto/tls"
 	internalgrpc "github.com/arhamchordia/chain-details/internal/grpc"
-	"github.com/arhamchordia/chain-details/types"
+	grpctypes "github.com/arhamchordia/chain-details/types/grpc"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -58,7 +58,7 @@ func TestParseValidators(t *testing.T) {
 			require.Equal(t, err.Error(), tc.errorParseValidators)
 		}
 
-		err = os.Remove(types.PrefixGRPC + types.ValidatorsInfoFileName + ".csv")
+		err = os.Remove(grpctypes.PrefixGRPC + grpctypes.ValidatorsInfoFileName + ".csv")
 		if tc.expectErrorDeleteFile {
 			require.Equal(t, err.Error(), tc.errorDeleteFile)
 		}

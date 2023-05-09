@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"github.com/arhamchordia/chain-details/internal"
+	grpctypes "github.com/arhamchordia/chain-details/types/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"time"
@@ -61,7 +62,7 @@ func ParseValidators(grpcConn *grpc.ClientConn, accountPrefix string) error {
 		context.Background(),
 		&stakingtypes.QueryValidatorsRequest{
 			Pagination: &query.PageRequest{
-				Limit: types.ValidatorsLimit,
+				Limit: grpctypes.ValidatorsLimit,
 			},
 		})
 	if err != nil {
@@ -102,12 +103,12 @@ func ParseValidators(grpcConn *grpc.ClientConn, accountPrefix string) error {
 	}
 
 	err = internal.WriteCSV(
-		types.PrefixGRPC+types.ValidatorsInfoFileName,
+		grpctypes.PrefixGRPC+grpctypes.ValidatorsInfoFileName,
 		[]string{
-			types.HeaderMoniker,
-			types.HeaderPercentageWeight,
-			types.HeaderSelfDelegation,
-			types.HeaderTotalDelegations,
+			grpctypes.HeaderMoniker,
+			grpctypes.HeaderPercentageWeight,
+			grpctypes.HeaderSelfDelegation,
+			grpctypes.HeaderTotalDelegations,
 		},
 		data,
 	)

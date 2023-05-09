@@ -4,7 +4,7 @@ import (
 	"cloud.google.com/go/bigquery"
 	"fmt"
 	"github.com/arhamchordia/chain-details/internal"
-	"github.com/arhamchordia/chain-details/types"
+	bigquerytypes "github.com/arhamchordia/chain-details/types/bigquery"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/api/iterator"
 	"log"
@@ -18,14 +18,7 @@ func TransactionsQuery(AddressQuery string) error {
 		return err
 	}
 
-	it, err := bqQuerier.ExecuteQuery("SELECT block_height, tx_id, message, ingestion_timestamp  " +
-		"FROM `numia-data.quasar.quasar_tx_messages` " +
-		"WHERE (" +
-		"	SELECT COUNT(*)" +
-		"	FROM UNNEST(REGEXP_EXTRACT_ALL(TO_JSON_STRING(message), r':\\s*\"([^\"]*)\"')) AS json_values" +
-		"	WHERE json_values = '" + addr.String() + "'" +
-		") > 0 " +
-		"ORDER BY block_height ASC")
+	it, err := bqQuerier.ExecuteQuery(fmt.Sprintf(bigquerytypes.QueryTransactions, addr.String()))
 	if err != nil {
 		log.Fatalf("Failed to execute BigQuery query: %v", err)
 	}
@@ -59,7 +52,7 @@ func TransactionsQuery(AddressQuery string) error {
 		headerRow[i] = fmt.Sprintf("column_%d", i+1)
 	}
 
-	err = internal.WriteCSV(types.PrefixBigQuery+"transactions_"+AddressQuery, headerRow, rows)
+	err = internal.WriteCSV(bigquerytypes.PrefixBigQuery+"transactions_"+AddressQuery, headerRow, rows)
 	if err != nil {
 		return err
 	}

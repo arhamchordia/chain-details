@@ -3,7 +3,7 @@ package grpc_test
 import (
 	"crypto/tls"
 	internalgrpc "github.com/arhamchordia/chain-details/internal/grpc"
-	"github.com/arhamchordia/chain-details/types"
+	grpctypes "github.com/arhamchordia/chain-details/types/grpc"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -56,12 +56,12 @@ func TestParseDelegators(t *testing.T) {
 			require.Equal(t, err.Error(), tc.errorParseDelegators)
 		}
 
-		err = os.Remove(types.PrefixGRPC + types.DelegatorDelegationEntriesFileName + ".csv")
+		err = os.Remove(grpctypes.PrefixGRPC + grpctypes.DelegatorDelegationEntriesFileName + ".csv")
 		if tc.expectErrorDeleteFile {
 			require.Equal(t, err.Error(), tc.errorDeleteEntriesFile)
 		}
 
-		err = os.Remove(types.PrefixGRPC + types.DelegatorSharesFileName + ".csv")
+		err = os.Remove(grpctypes.PrefixGRPC + grpctypes.DelegatorSharesFileName + ".csv")
 		if tc.expectErrorDeleteFile {
 			require.Equal(t, err.Error(), tc.errorDeleteSharesFile)
 		}

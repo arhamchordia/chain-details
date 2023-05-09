@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"time"
 
+	grpctypes "github.com/arhamchordia/chain-details/types/grpc"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -61,7 +62,7 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 	stakingResponse, err := stakingClient.Validators(
 		context.Background(),
 		&stakingtypes.QueryValidatorsRequest{
-			Pagination: &query.PageRequest{Limit: types.ValidatorsLimit},
+			Pagination: &query.PageRequest{Limit: grpctypes.ValidatorsLimit},
 		})
 	if err != nil {
 		return err
@@ -80,7 +81,7 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 			context.Background(),
 			&stakingtypes.QueryValidatorDelegationsRequest{
 				ValidatorAddr: val.OperatorAddress,
-				Pagination:    &query.PageRequest{Limit: types.DelegatorsLimit},
+				Pagination:    &query.PageRequest{Limit: grpctypes.DelegatorsLimit},
 			},
 		)
 		if err != nil {
@@ -124,11 +125,11 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 	}
 
 	err = internal.WriteCSV(
-		types.PrefixGRPC+types.DelegatorDelegationEntriesFileName,
+		grpctypes.PrefixGRPC+grpctypes.DelegatorDelegationEntriesFileName,
 		[]string{
-			types.HeaderDelegator,
-			types.HeaderValidator,
-			types.HeaderShares,
+			grpctypes.HeaderDelegator,
+			grpctypes.HeaderValidator,
+			grpctypes.HeaderShares,
 		},
 		delegatorDelegationEntries,
 	)
@@ -142,10 +143,10 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 	}
 
 	err = internal.WriteCSV(
-		types.PrefixGRPC+types.DelegatorSharesFileName,
+		grpctypes.PrefixGRPC+grpctypes.DelegatorSharesFileName,
 		[]string{
-			types.HeaderDelegator,
-			types.HeaderShares,
+			grpctypes.HeaderDelegator,
+			grpctypes.HeaderShares,
 		},
 		delegatorShares,
 	)

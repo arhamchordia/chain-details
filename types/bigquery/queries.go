@@ -1,6 +1,7 @@
 package bigquery
 
 const (
+	// QueryTransactions bigquery transactions --address
 	QueryTransactions = "SELECT block_height, tx_id, message, ingestion_timestamp  " +
 		"FROM `numia-data.quasar.quasar_tx_messages` " +
 		"WHERE (" +
@@ -10,6 +11,7 @@ const (
 		") > 0 " +
 		"ORDER BY block_height ASC"
 
+	// QueryVaultsBond bigquery bond (main query)
 	QueryVaultsBond = `WITH combined_rows AS (
   SELECT
     block_height,
@@ -90,7 +92,11 @@ GROUP BY
   tx_id
 ORDER BY
   block_height ASC;`
-	QueryVaultsBondAddressFilter   = "AND EXISTS (SELECT 1 FROM combined_rows c WHERE c.tx_id = combined_rows.tx_id AND c.attribute_key = 'spender' AND c.attribute_value = '%s')"
+
+	// QueryVaultsBondAddressFilter bigquery bond optional query for flag --address
+	QueryVaultsBondAddressFilter = "AND EXISTS (SELECT 1 FROM combined_rows c WHERE c.tx_id = combined_rows.tx_id AND c.attribute_key = 'spender' AND c.attribute_value = '%s')"
+
+	// QueryVaultsBondConfirmedFilter bigquery bond optional query for --confirmed and --pending flags
 	QueryVaultsBondConfirmedFilter = `
 WITH extracted_data AS (
   SELECT
@@ -122,6 +128,7 @@ GROUP BY
 ORDER BY
   bond_id ASC;
 `
+	// QueryVaultsUnbond bigquery unbond (main query)
 	QueryVaultsUnbond = `WITH combined_rows AS (
   SELECT
     block_height,
@@ -202,8 +209,44 @@ GROUP BY
   tx_id
 ORDER BY
   block_height ASC;`
+
+	// QueryVaultsUnbondAddressFilter bigquery unbond optional query for flag --address
 	QueryVaultsUnbondAddressFilter = "AND EXISTS (SELECT 1 FROM combined_rows c WHERE c.tx_id = combined_rows.tx_id AND c.attribute_key = 'spender' AND c.attribute_value = '%s')"
 
+	// QueryVaultsUnbondConfirmedFilter bigquery unbond optional query for --confirmed and --pending flags
+	QueryVaultsUnbondConfirmedFilter = `
+WITH extracted_data AS (
+  SELECT
+    block_height,
+    tx_id,
+    REGEXP_EXTRACT(attribute_value, r'unbond_id: "([^"]+)"') AS unbond_id,
+    REGEXP_EXTRACT(attribute_value, r'amount: Some\(Uint128\((\d+)\)\)') AS share_amount,
+    REGEXP_EXTRACT(attribute_value, r'owner: Addr\("([^"]+)"\)') AS owner_addr,
+    CAST(ingestion_timestamp AS STRING) AS ingestion_timestamp
+  FROM
+    ` + "`numia-data.quasar.quasar_event_attributes`" + `
+  WHERE
+    event_type = 'wasm'
+    AND attribute_key = 'callback-info'
+    AND attribute_value LIKE '%UnbondResponse%'
+    AND attribute_value LIKE '%unbond_id%'
+)
+SELECT
+  unbond_id,
+  STRING_AGG(share_amount, ', ') AS share_amounts,
+  STRING_AGG(owner_addr, ', ') AS owner_addrs,
+  STRING_AGG(ingestion_timestamp, ', ') AS ingestion_timestamps,
+  STRING_AGG(CAST(block_height AS STRING), ', ') AS block_heights,
+  STRING_AGG(tx_id, ', ') AS tx_ids
+FROM
+  extracted_data
+GROUP BY
+  unbond_id
+ORDER BY
+  unbond_id ASC;
+`
+
+	// QueryVaultsWithdraw bigquery withdraw (main query)
 	QueryVaultsWithdraw = `WITH combined_rows AS (
   SELECT
     block_height,
@@ -285,5 +328,6 @@ GROUP BY
 ORDER BY
   block_height ASC;`
 
+	// QueryVaultsWithdrawAddressFilter bigquery withdraw optional query for flag --address
 	QueryVaultsWithdrawAddressFilter = "WHERE EXISTS (SELECT 1 FROM combined_rows c WHERE c.tx_id = combined_rows.tx_id AND c.attribute_key = 'spender' AND c.attribute_value = '%s')"
 )

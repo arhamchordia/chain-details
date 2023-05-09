@@ -29,7 +29,7 @@ var UnbondCmd = &cobra.Command{
 	Long:  `This command allows you to query all the unbond actions to the Quasar Vault. Provide optionally the address to filter for with the --address flag.`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := vaults.QueryUnbond(AddressQuery)
+		err := vaults.QueryUnbond(AddressQuery, ConfirmedQuery, PendingQuery)
 		if err != nil {
 			return err
 		}

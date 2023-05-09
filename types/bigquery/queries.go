@@ -81,8 +81,6 @@ key_value_pairs AS (
 SELECT
   block_height,
   tx_id,
-  MAX(event_types) AS event_types,
-  MAX(event_sources) AS event_sources,
   ARRAY_AGG(STRUCT(attribute_key, attribute_value)) AS attribute_pairs,
   MAX(latest_ingestion_timestamp) AS latest_ingestion_timestamp
 FROM
@@ -92,8 +90,38 @@ GROUP BY
   tx_id
 ORDER BY
   block_height ASC;`
-	QueryVaultsBondAddressFilter = "AND EXISTS (SELECT 1 FROM combined_rows c WHERE c.tx_id = combined_rows.tx_id AND c.attribute_key = 'spender' AND c.attribute_value = '%s')"
-
+	QueryVaultsBondAddressFilter   = "AND EXISTS (SELECT 1 FROM combined_rows c WHERE c.tx_id = combined_rows.tx_id AND c.attribute_key = 'spender' AND c.attribute_value = '%s')"
+	QueryVaultsBondConfirmedFilter = `
+WITH extracted_data AS (
+  SELECT
+    block_height,
+    tx_id,
+    REGEXP_EXTRACT(attribute_value, r'bond_id: "([^"]+)"') AS bond_id,
+    REGEXP_EXTRACT(attribute_value, r'share_amount: Uint128\((\d+)\)') AS share_amount,
+    REGEXP_EXTRACT(attribute_value, r'owner: Addr\("([^"]+)"\)') AS owner_addr,
+    CAST(ingestion_timestamp AS STRING) AS ingestion_timestamp
+  FROM
+    ` + "`numia-data.quasar.quasar_message_event_attributes`" + `
+  WHERE
+    event_type = 'wasm'
+    AND attribute_key = 'callback-info'
+    AND attribute_value LIKE '%BondResponse%'
+    AND attribute_value LIKE '%bond_id%'
+)
+SELECT
+  bond_id,
+  STRING_AGG(share_amount, ', ') AS share_amounts,
+  STRING_AGG(owner_addr, ', ') AS owner_addrs,
+  STRING_AGG(ingestion_timestamp, ', ') AS ingestion_timestamps,
+  STRING_AGG(CAST(block_height AS STRING), ', ') AS block_heights,
+  STRING_AGG(tx_id, ', ') AS tx_ids
+FROM
+  extracted_data
+GROUP BY
+  bond_id
+ORDER BY
+  bond_id ASC;
+`
 	QueryVaultsUnbond = `WITH combined_rows AS (
   SELECT
     block_height,
@@ -165,8 +193,6 @@ key_value_pairs AS (
 SELECT
   block_height,
   tx_id,
-  MAX(event_types) AS event_types,
-  MAX(event_sources) AS event_sources,
   ARRAY_AGG(STRUCT(attribute_key, attribute_value)) AS attribute_pairs,
   MAX(latest_ingestion_timestamp) AS latest_ingestion_timestamp
 FROM

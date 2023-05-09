@@ -51,7 +51,7 @@ valid_tx_ids AS (
 filtered_combined_rows AS (
   SELECT *
   FROM combined_rows
-  WHERE attribute_key IN ('spender', 'amount', 'bond_id', 'deposit')
+  WHERE attribute_key IN ('spender', 'burnt', 'bond_id')
 ),
 key_value_pairs AS (
   SELECT

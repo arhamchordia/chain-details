@@ -11,7 +11,11 @@ import (
 )
 
 // QueryBond returns a file with the bond events in all the blocks
-func QueryBond(addressQuery string, confirmedQuery bool) error {
+func QueryBond(addressQuery string, confirmedQuery bool, pendingQuery bool) error {
+	if confirmedQuery && pendingQuery {
+		return fmt.Errorf("--confirmed and --pending flags cannot be used together")
+	}
+
 	addressFilterString := ""
 	filename := bigquerytypes.PrefixBigQuery + bigquerytypes.PrependQueryVaultsBond
 	if len(addressQuery) > 0 {
@@ -21,13 +25,16 @@ func QueryBond(addressQuery string, confirmedQuery bool) error {
 	if confirmedQuery {
 		filename = fmt.Sprintf("%s_%s", filename, "confirmed")
 	}
+	if pendingQuery {
+		filename = fmt.Sprintf("%s_%s", filename, "pending")
+	}
 
 	rows, err := executeQueryAndFetchRows(bigquerytypes.QueryVaultsBond, addressFilterString, true)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
 
-	if confirmedQuery {
+	if confirmedQuery || pendingQuery {
 		confirmedRows, err := executeQueryAndFetchRows(bigquerytypes.QueryVaultsBondConfirmedFilter, "", false)
 		if err != nil {
 			log.Fatalf("%v", err)
@@ -46,10 +53,16 @@ func QueryBond(addressQuery string, confirmedQuery bool) error {
 		for _, row := range rows {
 			column3 := row[2]
 			match := bondIDRegex.FindStringSubmatch(column3)
-			if len(match) > 1 {
+			if len(match) > 1 && bondIDRegex.MatchString(column3) {
 				bondID := match[1]
-				if _, exists := confirmedBondIDs[bondID]; exists {
-					filteredRows = append(filteredRows, row)
+				if confirmedQuery {
+					if _, exists := confirmedBondIDs[bondID]; exists {
+						filteredRows = append(filteredRows, row)
+					}
+				} else if pendingQuery {
+					if _, exists := confirmedBondIDs[bondID]; !exists {
+						filteredRows = append(filteredRows, row)
+					}
 				}
 			}
 		}

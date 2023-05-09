@@ -7,6 +7,7 @@ import (
 
 var AddressQuery string
 var ConfirmedQuery bool
+var PendingQuery bool
 
 var BondCmd = &cobra.Command{
 	Use:   "bond",
@@ -14,7 +15,7 @@ var BondCmd = &cobra.Command{
 	Long:  `This command allows you to query all the bond actions to the Quasar Vault. Provide optionally the address to filter for with the --address flag.`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := vaults.QueryBond(AddressQuery, ConfirmedQuery)
+		err := vaults.QueryBond(AddressQuery, ConfirmedQuery, PendingQuery)
 		if err != nil {
 			return err
 		}

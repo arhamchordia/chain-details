@@ -1,11 +1,9 @@
 package vaults
 
 import (
-	"cloud.google.com/go/bigquery"
 	"fmt"
 	"github.com/arhamchordia/chain-details/internal"
 	bigquerytypes "github.com/arhamchordia/chain-details/types/bigquery"
-	"google.golang.org/api/iterator"
 	"log"
 	"regexp"
 )
@@ -29,13 +27,13 @@ func QueryBond(addressQuery string, confirmedQuery bool, pendingQuery bool) erro
 		filename = fmt.Sprintf("%s_%s", filename, "pending")
 	}
 
-	rows, err := executeQueryAndFetchRows(bigquerytypes.QueryVaultsBond, addressFilterString, true)
+	headers, rows, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryVaultsBond, addressFilterString, true)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
 
 	if confirmedQuery || pendingQuery {
-		confirmedRows, err := executeQueryAndFetchRows(bigquerytypes.QueryVaultsBondConfirmedFilter, "", false)
+		_, confirmedRows, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryVaultsBondConfirmedFilter, "", false)
 		if err != nil {
 			log.Fatalf("%v", err)
 		}
@@ -69,7 +67,7 @@ func QueryBond(addressQuery string, confirmedQuery bool, pendingQuery bool) erro
 		rows = filteredRows
 	}
 
-	err = createCSV(filename, rows)
+	err = internal.WriteCSV(filename, headers, rows)
 	if err != nil {
 		log.Printf("Warning: %v", err)
 		return err
@@ -87,12 +85,12 @@ func QueryUnbond(addressQuery string) error {
 		filename = fmt.Sprintf("%s_%s", filename, addressQuery)
 	}
 
-	rows, err := executeQueryAndFetchRows(bigquerytypes.QueryVaultsUnbond, addressFilterString, true)
+	headers, rows, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryVaultsUnbond, addressFilterString, true)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
 
-	err = createCSV(filename, rows)
+	err = internal.WriteCSV(filename, headers, rows)
 	if err != nil {
 		log.Printf("Warning: %v", err)
 		return err
@@ -110,72 +108,14 @@ func QueryWithdraw(addressQuery string) error {
 		filename = fmt.Sprintf("%s_%s", filename, addressQuery)
 	}
 
-	rows, err := executeQueryAndFetchRows(bigquerytypes.QueryVaultsWithdraw, addressFilterString, true)
+	headers, rows, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryVaultsWithdraw, addressFilterString, true)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
 
-	err = createCSV(filename, rows)
+	err = internal.WriteCSV(filename, headers, rows)
 	if err != nil {
 		log.Printf("Warning: %v", err)
-		return err
-	}
-
-	return nil
-}
-
-func executeQueryAndFetchRows(query, addressFilter string, applyAddressFilter bool) ([][]string, error) {
-	bqQuerier, _ := internal.NewBigQueryQuerier()
-
-	// apply addressFilter only if applyAddressFilter is true
-	if applyAddressFilter {
-		query = fmt.Sprintf(query, addressFilter)
-	}
-
-	it, err := bqQuerier.ExecuteQuery(query)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to execute BigQuery query: %v", err)
-	}
-	defer bqQuerier.Close()
-
-	var rows [][]string
-
-	for {
-		var row []bigquery.Value
-		err := it.Next(&row)
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("Failed to iterate results: %v", err)
-		}
-
-		var csvRow []string
-		for _, val := range row {
-			csvRow = append(csvRow, fmt.Sprintf("%v", val))
-		}
-		rows = append(rows, csvRow)
-	}
-
-	if len(rows) == 0 {
-		return nil, fmt.Errorf("No rows returned by query")
-	}
-
-	return rows, nil
-}
-
-func createCSV(filename string, rows [][]string) error {
-	if len(rows) == 0 {
-		return fmt.Errorf("No rows to write to the CSV")
-	}
-
-	headerRow := make([]string, len(rows[0]))
-	for i := range rows[0] {
-		headerRow[i] = fmt.Sprintf("column_%d", i+1)
-	}
-
-	err := internal.WriteCSV(filename, headerRow, rows)
-	if err != nil {
 		return err
 	}
 

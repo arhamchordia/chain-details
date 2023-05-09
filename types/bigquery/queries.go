@@ -53,7 +53,7 @@ valid_tx_ids AS (
 filtered_combined_rows AS (
   SELECT *
   FROM combined_rows
-  WHERE attribute_key IN ('spender', 'burnt', 'bond_id')
+  WHERE attribute_key IN ('spender', 'amount', 'bond_id', 'deposit')
 ),
 key_value_pairs AS (
   SELECT
@@ -129,7 +129,8 @@ ORDER BY
   bond_id ASC;
 `
 	// QueryVaultsUnbond bigquery unbond (main query)
-	QueryVaultsUnbond = `WITH combined_rows AS (
+	QueryVaultsUnbond = `
+WITH combined_rows AS (
   SELECT
     block_height,
     tx_id,
@@ -146,6 +147,7 @@ ORDER BY
   ORDER BY
     block_height ASC
 ),
+
 filtered_tx_ids AS (
   SELECT DISTINCT
     tx_id
@@ -155,6 +157,7 @@ filtered_tx_ids AS (
     attribute_key = 'bond_id'
     %s
 ),
+
 valid_tx_ids AS (
   SELECT DISTINCT
     tx_id
@@ -167,11 +170,13 @@ valid_tx_ids AS (
       WHERE attribute_key = 'action' AND attribute_value = 'start_unbond'
     )
 ),
+
 filtered_combined_rows AS (
   SELECT *
   FROM combined_rows
-  WHERE attribute_key IN ('spender', 'amount', 'bond_id')
+  WHERE attribute_key IN ('spender', 'burnt', 'bond_id')
 ),
+
 key_value_pairs AS (
   SELECT
     fcr.block_height,
@@ -197,6 +202,7 @@ key_value_pairs AS (
     fcr.attribute_key,
     fcr.attribute_value
 )
+
 SELECT
   block_height,
   tx_id,

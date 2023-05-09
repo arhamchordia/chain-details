@@ -29,6 +29,7 @@ func BigQueryRegisterTransactionsCmd(parentCmd *cobra.Command) {
 func BigQueryRegisterVaultsCmd(parentCmd *cobra.Command) {
 	// VaultBondQuery
 	vaults.BondCmd.Flags().StringVarP(&vaults.AddressQuery, "address", "a", "", "Address to query (optional)")
+	vaults.BondCmd.Flags().BoolVarP(&vaults.ConfirmedQuery, "confirmed", "c", false, "Filter by confirmed bond actions (optional)")
 	parentCmd.AddCommand(vaults.BondCmd)
 	// VaultUnbondQuery
 	vaults.UnbondCmd.Flags().StringVarP(&vaults.AddressQuery, "address", "a", "", "Address to query (optional)")

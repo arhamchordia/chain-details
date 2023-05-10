@@ -461,6 +461,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 	var lockDetailsByHeight []types.LockDetailsByHeight
 	addressToSharesMap := make(map[string]types.AddressSharesInIncentiveContract)
 	var callBackInfoWithHeight []types.CallBackInfoWithHeight
+	var beginUnlocking []types.BeginUnlocking
 
 	for i := startingHeight; i <= endHeight; i++ {
 		if i%1000 == 0 {
@@ -485,7 +486,6 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 			tempContractDetailsMap := make(map[string]types.ContractDetails)
 			var tempContractDetails []types.ContractDetails
 			var tempCallBackInfos []types.CallBackInfo
-			var BeginUnlocking []types.BeginUnlocking
 
 			for o, k := range j.Events {
 				// bond filters
@@ -601,7 +601,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 				// begin unlocking
 				if k.Type == "wasm" && len(k.Attributes) == 3 {
 					if string(k.Attributes[2].Key) == "step" && strings.Contains(string(k.Attributes[2].Value), "BeginUnlocking") {
-						BeginUnlocking = append(BeginUnlocking, types.BeginUnlocking{
+						beginUnlocking = append(beginUnlocking, types.BeginUnlocking{
 							Height:          i,
 							Step:            string(k.Attributes[2].Value),
 							ContractAddress: string(k.Attributes[0].Value),
@@ -659,11 +659,13 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 	// store filter bonds
 	// marshal and write the contents in a file
 	bondFile, err := json.MarshalIndent(depositorDetails, "", " ")
+	fmt.Println("1")
 	if err != nil {
 		return err
 	}
 
 	err = os.WriteFile("replay-bond"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", bondFile, 0644)
+	fmt.Println("1")
 	if err != nil {
 		return err
 	}
@@ -671,11 +673,13 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 	// store filter unbonds
 	// marshal and write the contents in a file
 	unbondFile, err := json.MarshalIndent(depositorDetailsUnbond, "", " ")
+	fmt.Println("1")
 	if err != nil {
 		return err
 	}
 
 	err = os.WriteFile("replay-unbond"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", unbondFile, 0644)
+	fmt.Println("1")
 	if err != nil {
 		return err
 	}
@@ -683,11 +687,13 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 	// store locked tokens
 	// marshal and write the contents in a file
 	lockDetailsFile, err := json.MarshalIndent(lockDetailsByHeight, "", " ")
+	fmt.Println("1")
 	if err != nil {
 		return err
 	}
 
 	err = os.WriteFile("lock-details"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", lockDetailsFile, 0644)
+	fmt.Println("1")
 	if err != nil {
 		return err
 	}
@@ -695,11 +701,13 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 	// store mints
 	// marshal and write the contents in a file
 	mintFile, err := json.MarshalIndent(addressToSharesMap, "", " ")
+	fmt.Println("1")
 	if err != nil {
 		return err
 	}
 
 	err = os.WriteFile("minted-shares"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", mintFile, 0644)
+	fmt.Println("1")
 	if err != nil {
 		return err
 	}
@@ -707,23 +715,27 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 	// store call back infos
 	// marshal and write the contents in a file
 	callbackInfoFile, err := json.MarshalIndent(callBackInfoWithHeight, "", " ")
+	fmt.Println("1")
 	if err != nil {
 		return err
 	}
 
 	err = os.WriteFile("callback-infos"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", callbackInfoFile, 0644)
+	fmt.Println("1")
 	if err != nil {
 		return err
 	}
 
 	// store begin unlocking
 	// marshal and write the contents in a file
-	beginUnlockingFile, err := json.MarshalIndent(BeginUnlocking, "", " ")
+	beginUnlockingFile, err := json.MarshalIndent(beginUnlocking, "", " ")
+	fmt.Println("1")
 	if err != nil {
 		return err
 	}
 
 	err = os.WriteFile("begin-unlocking"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", beginUnlockingFile, 0644)
+	fmt.Println("1")
 	if err != nil {
 		return err
 	}

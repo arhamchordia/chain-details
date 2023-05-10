@@ -163,14 +163,14 @@ go run main.go bigquery transactions --address <account_address>
 
 `bigquery bond`: Executes a SQL query to scrape all the bond transactions for a given account address and generates a file with the results. Providing the address to query with the --address flag is optional.
 ```bash
-go run main.go bigquery bond (--address <account_address>)
+go run main.go bigquery bond (--address <account_address>) (--confirmed || --pending)
 ```
 
 ##### Unbond
 
 `bigquery unbond`: Executes a SQL query to scrape all the unbond transactions for a given account address and generates a file with the results. Providing the address to query with the --address flag is optional.
 ```bash
-go run main.go bigquery unbond (--address <account_address>)
+go run main.go bigquery unbond (--address <account_address>) (--confirmed || --pending)
 ```
 
 ##### Withdraw

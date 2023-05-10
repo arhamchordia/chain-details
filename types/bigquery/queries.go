@@ -292,7 +292,7 @@ valid_tx_ids AS (
 filtered_combined_rows AS (
   SELECT *
   FROM combined_rows
-  WHERE attribute_key IN ('spender', 'amount', 'packet_sequence', 'pending-msg')
+  WHERE attribute_key IN ('spender', 'amount', 'packet_sequence', 'packet_src_channel')
 ),
 key_value_pairs AS (
   SELECT
@@ -322,8 +322,6 @@ key_value_pairs AS (
 SELECT
   block_height,
   tx_id,
-  MAX(event_types) AS event_types,
-  MAX(event_sources) AS event_sources,
   ARRAY_AGG(STRUCT(attribute_key, attribute_value)) AS attribute_pairs,
   MAX(latest_ingestion_timestamp) AS latest_ingestion_timestamp
 FROM

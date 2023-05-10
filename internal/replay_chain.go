@@ -137,9 +137,10 @@ func ReplayChainUnbond(RPCAddress string, startingHeight, endHeight int64) error
 		for _, j := range blockResults.TxsResults {
 			if strings.Contains(string(j.Data), types.IdentifierMsgExecuteContract) {
 				for _, k := range j.Events {
-					if k.Type == types.Wasm {
-						if len(k.Attributes) == 5 {
-							unbondID, err := strconv.ParseInt(string(k.Attributes[4].Value), 10, 64)
+					if k.Type == types.Wasm && len(k.Attributes) == 5 {
+						if string(k.Attributes[1].Key) == "action" && string(k.Attributes[1].Value) == "start_unbond" &&
+							string(k.Attributes[3].Key) == "burnt" {
+							unbondID, _ := strconv.ParseInt(string(k.Attributes[4].Value), 10, 64)
 							if err != nil {
 								return fmt.Errorf("incorrect unbond ID at height %d", i)
 							}
@@ -509,9 +510,10 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 				}
 
 				// unbond filters
-				if k.Type == types.Wasm {
-					if len(k.Attributes) == 5 {
-						unbondID, err := strconv.ParseInt(string(k.Attributes[4].Value), 10, 64)
+				if k.Type == types.Wasm && len(k.Attributes) == 5 {
+					if string(k.Attributes[1].Key) == "action" && string(k.Attributes[1].Value) == "start_unbond" &&
+						string(k.Attributes[3].Key) == "burnt" {
+						unbondID, _ := strconv.ParseInt(string(k.Attributes[4].Value), 10, 64)
 						if err != nil {
 							return fmt.Errorf("incorrect unbond ID at height %d", i)
 						}

@@ -1,5 +1,13 @@
 #!/bin/sh
 
+# Load the .env file
+if [ -f .env ]; then
+    source ./.env
+else
+    echo "No .env file found. Please create one with the SLACK_API_XOXB_TOKEN variable set."
+    exit 1
+fi
+
 # Initialize the gcp_project_id variable
 gcp_project_id=""
 
@@ -14,9 +22,6 @@ fi
 
 # Export the GOOGLE_CLOUD_PROJECT_ID environment variable
 export GOOGLE_CLOUD_PROJECT_ID="$gcp_project_id"
-
-# Checkout the reports branch or create if does not exist TODO uncomment below once agreed with the team
-#git checkout branch/Reports 2>/dev/null || git checkout -b branch/Reports
 
 #Defining reusable command function
 run_command_variants() {
@@ -59,10 +64,20 @@ mkdir -p $TODAY_DATETIME
 mv ./output/*.csv ./$TODAY_DATETIME
 rm -rf output
 
-# Git add, commit, and push TODO uncomment below once agreed with the team
-#git add $TODAY_DATETIME
-#git commit -m "Generated reports on $TODAY_DATETIME"
-#git push
+# Create a zip archive of the reports
+zip -r ${TODAY_DATETIME}.zip ${TODAY_DATETIME}
+
+echo ${TODAY_DATETIME}
+echo ${SLACK_OAUTH_TOKEN}
+
+# Upload the zip archive to Slack
+curl -F file=@${TODAY_DATETIME}.zip \
+     -F "initial_comment=Generated reports on ${TODAY_DATETIME}" \
+     -F channels='#monitor-vault-reports' \
+     -H "Authorization: Bearer ${SLACK_OAUTH_TOKEN}" \
+     https://slack.com/api/files.upload
+
+rm -rf ${TODAY_DATETIME} ${TODAY_DATETIME}.zip
 
 # Just a final feedback about operation successful
 echo "All the reports have been generated and pushed"

@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func RawQuery(RawQuery string) error {
+func RawQuery(RawQuery string, outputFormat string) error {
 	headers, rows, err := internal.ExecuteQueryAndFetchRows(RawQuery, "", false)
 	if err != nil {
 		log.Fatalf("%v", err)
@@ -16,8 +16,12 @@ func RawQuery(RawQuery string) error {
 		log.Fatalf("No rows returned by query")
 	}
 
-	filename := bigquerytypes.PrefixBigQuery + "raw"
-	err = internal.WriteCSV(filename, headers, rows)
+	filename := bigquerytypes.PrefixBigQuery + bigquerytypes.PrependQueryRaw
+	if outputFormat == "csv" {
+		err = internal.WriteCSV(filename, headers, rows)
+	} else {
+		err = internal.WriteJSON(filename, headers, rows)
+	}
 	if err != nil {
 		return err
 	}

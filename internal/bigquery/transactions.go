@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func TransactionsQuery(AddressQuery string) error {
+func TransactionsQuery(AddressQuery string, outputFormat string) error {
 	headers, rows, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryTransactions, AddressQuery, true)
 	if err != nil {
 		log.Fatalf("%v", err)
@@ -16,8 +16,12 @@ func TransactionsQuery(AddressQuery string) error {
 		log.Fatalf("No rows returned by query")
 	}
 
-	filename := bigquerytypes.PrefixBigQuery + "transactions_" + AddressQuery
-	err = internal.WriteCSV(filename, headers, rows)
+	filename := bigquerytypes.PrefixBigQuery + bigquerytypes.PrependQueryTransactions + AddressQuery
+	if outputFormat == "csv" {
+		err = internal.WriteCSV(filename, headers, rows)
+	} else {
+		err = internal.WriteJSON(filename, headers, rows)
+	}
 	if err != nil {
 		return err
 	}

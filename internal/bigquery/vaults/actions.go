@@ -10,7 +10,7 @@ import (
 )
 
 // QueryBond returns a file with the bond events in all the blocks
-func QueryBond(addressQuery string, confirmedQuery bool, pendingQuery bool) error {
+func QueryBond(addressQuery string, confirmedQuery bool, pendingQuery bool, outputFormat string) error {
 	if confirmedQuery && pendingQuery {
 		return fmt.Errorf("--confirmed and --pending flags cannot be used together")
 	}
@@ -70,7 +70,11 @@ func QueryBond(addressQuery string, confirmedQuery bool, pendingQuery bool) erro
 		rows = filteredRows
 	}
 
-	err = internal.WriteCSV(filename, headers, rows)
+	if outputFormat == "csv" {
+		err = internal.WriteCSV(filename, headers, rows)
+	} else {
+		err = internal.WriteJSON(filename, headers, rows)
+	}
 	if err != nil {
 		log.Printf("Warning: %v", err)
 		return err
@@ -80,7 +84,7 @@ func QueryBond(addressQuery string, confirmedQuery bool, pendingQuery bool) erro
 }
 
 // QueryUnbond returns a file with the unbond events in all the blocks
-func QueryUnbond(addressQuery string, confirmedQuery bool, pendingQuery bool) error {
+func QueryUnbond(addressQuery string, confirmedQuery bool, pendingQuery bool, outputFormat string) error {
 	addressFilterString := ""
 	filename := bigquerytypes.PrefixBigQuery + bigquerytypes.PrependQueryVaultsUnbond
 	if len(addressQuery) > 0 {
@@ -134,7 +138,11 @@ func QueryUnbond(addressQuery string, confirmedQuery bool, pendingQuery bool) er
 		rows = filteredRows
 	}
 
-	err = internal.WriteCSV(filename, headers, rows)
+	if outputFormat == "csv" {
+		err = internal.WriteCSV(filename, headers, rows)
+	} else {
+		err = internal.WriteJSON(filename, headers, rows)
+	}
 	if err != nil {
 		log.Printf("Warning: %v", err)
 		return err
@@ -144,7 +152,7 @@ func QueryUnbond(addressQuery string, confirmedQuery bool, pendingQuery bool) er
 }
 
 // QueryWithdraw returns a file with the withdraw events in all the blocks
-func QueryWithdraw(addressQuery string) error {
+func QueryWithdraw(addressQuery string, outputFormat string) error {
 	addressFilterString := ""
 	filename := bigquerytypes.PrefixBigQuery + bigquerytypes.PrependQueryVaultsWithdraw
 	if len(addressQuery) > 0 {
@@ -157,7 +165,11 @@ func QueryWithdraw(addressQuery string) error {
 		log.Fatalf("%v", err)
 	}
 
-	err = internal.WriteCSV(filename, headers, rows)
+	if outputFormat == "csv" {
+		err = internal.WriteCSV(filename, headers, rows)
+	} else {
+		err = internal.WriteJSON(filename, headers, rows)
+	}
 	if err != nil {
 		log.Printf("Warning: %v", err)
 		return err

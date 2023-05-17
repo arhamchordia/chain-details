@@ -6,8 +6,6 @@ import (
 	"log"
 )
 
-var outputFormat string
-
 var rootCmd = &cobra.Command{
 	Use:   "chain-details",
 	Short: "Chain details is a simple CLI to generate specific details for any Cosmos chain in a CSV or JSON file",

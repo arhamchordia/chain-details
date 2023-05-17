@@ -10,6 +10,8 @@ import (
 	"cloud.google.com/go/bigquery"
 )
 
+var outputDir = "output/"
+
 type BigQueryQuerier struct {
 	Client *bigquery.Client
 	Ctx    context.Context

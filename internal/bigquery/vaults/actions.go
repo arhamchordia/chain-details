@@ -6,6 +6,7 @@ import (
 	bigquerytypes "github.com/arhamchordia/chain-details/types/bigquery"
 	"log"
 	"regexp"
+	"strings"
 )
 
 // QueryBond returns a file with the bond events in all the blocks
@@ -38,14 +39,15 @@ func QueryBond(addressQuery string, confirmedQuery bool, pendingQuery bool) erro
 			log.Fatalf("%v", err)
 		}
 
-		// creating map storing the bond_id from the second query
-		confirmedBondIDs := make(map[string]bool)
+		// creating map storing the bond_id and share amounts from the second query
+		confirmedBondIDs := make(map[string]int)
 		for _, row := range confirmedRows {
 			bondID := row[0]
-			confirmedBondIDs[bondID] = true
+			shareAmounts := strings.Split(row[1], ", ") // assuming share_amounts is at index 1, consider changing this if the query changes
+			confirmedBondIDs[bondID] = len(shareAmounts)
 		}
 
-		// filtering rows from the first query by checking if bond_id exists
+		// filtering rows from the first query by checking if bond_id exists && shareAmounts >= 3
 		filteredRows := [][]string{}
 		bondIDRegex := regexp.MustCompile(`bond_id (\d+)`)
 		for _, row := range rows {
@@ -53,12 +55,13 @@ func QueryBond(addressQuery string, confirmedQuery bool, pendingQuery bool) erro
 			match := bondIDRegex.FindStringSubmatch(column3)
 			if len(match) > 1 && bondIDRegex.MatchString(column3) {
 				bondID := match[1]
+				shareAmounts, exists := confirmedBondIDs[bondID]
 				if confirmedQuery {
-					if _, exists := confirmedBondIDs[bondID]; exists {
+					if exists && shareAmounts >= 3 {
 						filteredRows = append(filteredRows, row)
 					}
 				} else if pendingQuery {
-					if _, exists := confirmedBondIDs[bondID]; !exists {
+					if !exists || (exists && shareAmounts < 3) {
 						filteredRows = append(filteredRows, row)
 					}
 				}

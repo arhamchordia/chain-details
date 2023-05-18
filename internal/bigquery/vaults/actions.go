@@ -1,6 +1,8 @@
 package vaults
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/arhamchordia/chain-details/internal"
 	bigquerytypes "github.com/arhamchordia/chain-details/types/bigquery"
@@ -34,20 +36,82 @@ func QueryBond(addressQuery string, confirmedQuery bool, pendingQuery bool, outp
 	}
 
 	if confirmedQuery || pendingQuery {
-		_, confirmedRows, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryVaultsBondConfirmedFilter, "", false)
+		_, bondResponses, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryVaultsBondResponseFilter, "", false)
 		if err != nil {
 			log.Fatalf("%v", err)
 		}
 
 		// creating map storing the bond_id and share amounts from the second query
-		confirmedBondIDs := make(map[string]int)
-		for _, row := range confirmedRows {
+		bondResponsesIDs := make(map[string]int)
+		for _, row := range bondResponses {
 			bondID := row[0]
 			shareAmounts := strings.Split(row[1], ", ") // assuming share_amounts is at index 1, consider changing this if the query changes
-			confirmedBondIDs[bondID] = len(shareAmounts)
+			bondResponsesIDs[bondID] = len(shareAmounts)
 		}
 
-		// filtering rows from the first query by checking if bond_id exists && shareAmounts >= 3
+		_, bondShareAmountsTxIds, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryVaultsBondShareAmountsTxIds, "", false)
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+
+		// Convert txIDs into a slice of strings for the query
+		var txIDs []string
+		for _, row := range bondShareAmountsTxIds {
+			txIDs = append(txIDs, fmt.Sprintf("'%s'", row[0]))
+		}
+		txIDsStr := strings.Join(txIDs, ", ")
+
+		// Running the second query SELECT message FROM numia-data.quasar.quasar_tx_messages WHERE tx_id IN (%s)
+		_, messageRows, err := internal.ExecuteQueryAndFetchRows(fmt.Sprintf("SELECT message FROM numia-data.quasar.quasar_tx_messages WHERE tx_id IN (%s)", txIDsStr), "", false)
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+
+		// Create a map to store bond_ids that are included in the second query
+		includedInSecondQuery := make(map[string]bool)
+
+		// Create an array of bond_ids from the JSON struct retrieved, and decoding the "msg" from base64 if it is encoded, otherwise work with JSON already
+		for _, row := range messageRows {
+			var jsonData map[string]interface{}
+			var jsonMsgData map[string]interface{}
+			var data []byte
+
+			message := row[0]
+
+			if err := json.Unmarshal([]byte(message), &jsonData); err != nil {
+				continue
+			}
+
+			msgStr, ok := jsonData["msg"].(string)
+			if !ok {
+				continue
+			}
+
+			decodedMessage, err := base64.StdEncoding.DecodeString(msgStr)
+			if err == nil {
+				data = decodedMessage
+			} else {
+				data = []byte(msgStr)
+			}
+
+			if err := json.Unmarshal(data, &jsonMsgData); err != nil {
+				continue
+			}
+
+			callbacks, ok := jsonMsgData["callbacks"].([]interface{})
+			if ok {
+				for _, callback := range callbacks {
+					callbackMap, ok := callback.(map[string]interface{})
+					if ok {
+						bondID, ok := callbackMap["bond_id"].(string)
+						if ok {
+							includedInSecondQuery[bondID] = true
+						}
+					}
+				}
+			}
+		}
+
 		filteredRows := [][]string{}
 		bondIDRegex := regexp.MustCompile(`bond_id (\d+)`)
 		for _, row := range rows {
@@ -55,13 +119,14 @@ func QueryBond(addressQuery string, confirmedQuery bool, pendingQuery bool, outp
 			match := bondIDRegex.FindStringSubmatch(column3)
 			if len(match) > 1 && bondIDRegex.MatchString(column3) {
 				bondID := match[1]
-				shareAmounts, exists := confirmedBondIDs[bondID]
+				shareAmounts, exists := bondResponsesIDs[bondID]
+				_, included := includedInSecondQuery[bondID]
 				if confirmedQuery {
-					if exists && shareAmounts >= 3 {
+					if (exists && shareAmounts >= 3) || included {
 						filteredRows = append(filteredRows, row)
 					}
 				} else if pendingQuery {
-					if !exists || (exists && shareAmounts < 3) {
+					if (!exists && !included) || (exists && shareAmounts < 3 && !included) {
 						filteredRows = append(filteredRows, row)
 					}
 				}
@@ -110,10 +175,10 @@ func QueryUnbond(addressQuery string, confirmedQuery bool, pendingQuery bool, ou
 		}
 
 		// creating map storing the bond_id from the second query
-		confirmedBondIDs := make(map[string]bool)
+		confirmedUnbondIDs := make(map[string]bool)
 		for _, row := range confirmedRows {
 			bondID := row[0]
-			confirmedBondIDs[bondID] = true
+			confirmedUnbondIDs[bondID] = true
 		}
 
 		// filtering rows from the first query by checking if bond_id exists
@@ -125,11 +190,11 @@ func QueryUnbond(addressQuery string, confirmedQuery bool, pendingQuery bool, ou
 			if len(match) > 1 && bondIDRegex.MatchString(column3) {
 				bondID := match[1]
 				if confirmedQuery {
-					if _, exists := confirmedBondIDs[bondID]; exists {
+					if _, exists := confirmedUnbondIDs[bondID]; exists {
 						filteredRows = append(filteredRows, row)
 					}
 				} else if pendingQuery {
-					if _, exists := confirmedBondIDs[bondID]; !exists {
+					if _, exists := confirmedUnbondIDs[bondID]; !exists {
 						filteredRows = append(filteredRows, row)
 					}
 				}

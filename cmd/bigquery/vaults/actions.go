@@ -6,17 +6,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var AddressQuery string
-var ConfirmedQuery bool
-var PendingQuery bool
-
 var BondCmd = &cobra.Command{
 	Use:   "bond",
 	Short: "Generates csv files with wasm vault bond data",
 	Long:  `This command allows you to query all the bond actions to the Quasar Vault. Provide optionally the address to filter for with the --address flag.`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := vaults.QueryBond(AddressQuery, ConfirmedQuery, PendingQuery, config.OutputFormat)
+		err := vaults.QueryBond(config.AddressQuery, config.ConfirmedQuery, config.PendingQuery, config.OutputFormat)
 		if err != nil {
 			return err
 		}
@@ -30,7 +26,7 @@ var UnbondCmd = &cobra.Command{
 	Long:  `This command allows you to query all the unbond actions to the Quasar Vault. Provide optionally the address to filter for with the --address flag.`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := vaults.QueryUnbond(AddressQuery, ConfirmedQuery, PendingQuery, config.OutputFormat)
+		err := vaults.QueryUnbond(config.AddressQuery, config.ConfirmedQuery, config.PendingQuery, config.OutputFormat)
 		if err != nil {
 			return err
 		}
@@ -44,7 +40,7 @@ var WithdrawCmd = &cobra.Command{
 	Long:  `This command allows you to query all the withdraw actions to the Quasar Vault. Provide optionally the address to filter for with the --address flag.`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := vaults.QueryWithdraw(AddressQuery, config.OutputFormat)
+		err := vaults.QueryWithdraw(config.AddressQuery, config.OutputFormat)
 		if err != nil {
 			return err
 		}

@@ -82,16 +82,27 @@ func QueryBond(addressQuery string, confirmedQuery bool, pendingQuery bool, outp
 				continue
 			}
 
-			msgStr, ok := jsonData["msg"].(string)
+			msg, ok := jsonData["msg"]
 			if !ok {
 				continue
 			}
 
-			decodedMessage, err := base64.StdEncoding.DecodeString(msgStr)
-			if err == nil {
-				data = decodedMessage
-			} else {
-				data = []byte(msgStr)
+			switch v := msg.(type) {
+			case string:
+				decodedMessage, err := base64.StdEncoding.DecodeString(v)
+				if err == nil {
+					data = decodedMessage
+				} else {
+					data = []byte(v)
+				}
+			case map[string]interface{}:
+				jsonMsgData, err := json.Marshal(v)
+				if err != nil {
+					continue
+				}
+				data = jsonMsgData
+			default:
+				continue
 			}
 
 			if err := json.Unmarshal(data, &jsonMsgData); err != nil {

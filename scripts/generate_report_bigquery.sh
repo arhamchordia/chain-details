@@ -94,12 +94,65 @@ for csv_file in ./$TODAY_DATETIME/*.csv; do
     filter_csv "$csv_file"
 done
 
+# Initialize counters
+total_bonds=0
+confirmed_bonds=0
+pending_bonds=0
+total_unbonds=0
+confirmed_unbonds=0
+pending_unbonds=0
+total_withdraws=0
+
+# Filter each CSV file and update counters
+for csv_file in ./$TODAY_DATETIME/*.csv; do
+    filter_csv "$csv_file"
+
+    # Update counters based on file name
+    case "$csv_file" in
+    *_bond_confirmed*.csv)
+        confirmed_bonds=$(($(wc -l < "$csv_file") - 1))
+        ;;
+    *_bond_pending*.csv)
+        pending_bonds=$(($(wc -l < "$csv_file") - 1))
+        ;;
+    *_bond*.csv)
+        total_bonds=$(($(wc -l < "$csv_file") - 1))
+        ;;
+    *_unbond_confirmed*.csv)
+        confirmed_unbonds=$(($(wc -l < "$csv_file") - 1))
+        ;;
+    *_unbond_pending*.csv)
+        pending_unbonds=$(($(wc -l < "$csv_file") - 1))
+        ;;
+    *_unbond*.csv)
+        total_unbonds=$(($(wc -l < "$csv_file") - 1))
+        ;;
+    *_withdraw*.csv)
+        total_withdraws=$(($(wc -l < "$csv_file") - 1))
+        ;;
+    esac
+done
+
 # Create a zip archive of the reports
 zip -r ${TODAY_DATETIME}.zip ${TODAY_DATETIME}
 
+# Generate the summary message
+summary_message="Summary for the last 24 hours:
+Bonds:
+- Total: $total_bonds
+- Confirmed: $confirmed_bonds
+- Pending: $pending_bonds
+Unbonds:
+- Total: $total_unbonds
+- Confirmed: $confirmed_unbonds
+- Pending (including pending for bonding period, ignore this): $pending_unbonds
+Withdraws:
+- Total: $total_withdraws"
+
+echo $summary_message
 # Upload the zip archive to Slack
 curl -F file=@${TODAY_DATETIME}.zip \
-     -F "initial_comment=Generated reports on ${TODAY_DATETIME}" \
+     -F "initial_comment=$summary_message" \
      -F channels='#monitor-vault-reports' \
      -H "Authorization: Bearer ${SLACK_OAUTH_TOKEN}" \
      https://slack.com/api/files.upload

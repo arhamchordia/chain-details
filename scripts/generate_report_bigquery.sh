@@ -53,6 +53,31 @@ run_command() {
         }
     done
 }
+filter_csv() {
+    local file="$1"
+    local tmp_file="${file}.tmp"
+
+    head -n 1 "$file" > "$tmp_file"
+
+    local now=$(date +%s)
+
+    perl -MTime::Piece -e '
+        my $now = shift;
+        while (<>) {
+            next if $. == 1;
+            my @F = split /,/;
+            my $timestamp_str = $F[-1];
+            $timestamp_str =~ s/ \+0000 UTC//;
+            my $timestamp = eval { Time::Piece->strptime($timestamp_str, "%Y-%m-%d %H:%M:%S") };
+            if (!$@ && $timestamp->epoch >= $now - 24*60*60) {
+                print $_;
+            }
+        }
+    ' "$now" "$file" >> "$tmp_file"
+
+    mv "$tmp_file" "$file"
+}
+
 
 # Run all command variants for bond and unbond in parallel
 run_command_variants "bigquery bond" "bigquery unbond"
@@ -64,11 +89,13 @@ mkdir -p $TODAY_DATETIME
 mv ./output/*.csv ./$TODAY_DATETIME
 rm -rf output
 
+# Filter each CSV file
+for csv_file in ./$TODAY_DATETIME/*.csv; do
+    filter_csv "$csv_file"
+done
+
 # Create a zip archive of the reports
 zip -r ${TODAY_DATETIME}.zip ${TODAY_DATETIME}
-
-echo ${TODAY_DATETIME}
-echo ${SLACK_OAUTH_TOKEN}
 
 # Upload the zip archive to Slack
 curl -F file=@${TODAY_DATETIME}.zip \

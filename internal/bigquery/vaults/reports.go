@@ -44,6 +44,9 @@ func QueryDailyReportBond(outputFormat string) error {
 	oldUsersCount := 0
 	oldUsersAmount := 0
 
+	// AddressAfter map to check duplicates in rowsAfter
+	AddressAfter := make(map[string]bool)
+
 	for _, bond := range rowsAfter {
 		tempAddr := strings.ReplaceAll(bond[0], "\"", "")
 		_, ok := AddressBefore[tempAddr]
@@ -53,7 +56,11 @@ func QueryDailyReportBond(outputFormat string) error {
 			if err != nil {
 				return err
 			}
-			oldUsersCount++
+			// check if address is already counted
+			if _, ok := AddressAfter[tempAddr]; !ok {
+				oldUsersCount++
+				AddressAfter[tempAddr] = true
+			}
 			oldUsersAmount += int(parseInt)
 		} else {
 			// not found is a new user
@@ -61,7 +68,11 @@ func QueryDailyReportBond(outputFormat string) error {
 			if err != nil {
 				return err
 			}
-			newUsersCount++
+			// check if address is already counted
+			if _, ok := AddressAfter[tempAddr]; !ok {
+				newUsersCount++
+				AddressAfter[tempAddr] = true
+			}
 			newUsersAmount += int(parseInt)
 		}
 	}

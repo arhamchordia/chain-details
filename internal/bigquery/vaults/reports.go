@@ -1,7 +1,6 @@
 package vaults
 
 import (
-	"fmt"
 	"github.com/arhamchordia/chain-details/internal"
 	bigquerytypes "github.com/arhamchordia/chain-details/types/bigquery"
 	"log"
@@ -16,7 +15,7 @@ import (
 // - Amount bonded by old users
 // - Number of total users till today
 func QueryDailyReportBond(outputFormat string) error {
-	//filename := bigquerytypes.PrefixBigQuery + bigquerytypes.PrependQueryDailyReportBond
+	filename := bigquerytypes.PrefixBigQuery + bigquerytypes.PrependQueryDailyReportBond
 
 	// query all the bonds before last 24h with distinct on userAddressSender,
 	// this will retrieve a list of all the current bonders without repeated values
@@ -39,11 +38,11 @@ func QueryDailyReportBond(outputFormat string) error {
 		log.Fatalf("%v", err)
 	}
 
-	NewUsersCount := 0
-	NewUsersAmount := 0
-
-	OldUsersCount := 0
-	OldUsersAmount := 0
+	// Variables to increment
+	newUsersCount := 0
+	newUsersAmount := 0
+	oldUsersCount := 0
+	oldUsersAmount := 0
 
 	for _, bond := range rowsAfter {
 		tempAddr := strings.ReplaceAll(bond[0], "\"", "")
@@ -54,27 +53,32 @@ func QueryDailyReportBond(outputFormat string) error {
 			if err != nil {
 				return err
 			}
-			OldUsersCount++
-			OldUsersAmount += int(parseInt)
+			oldUsersCount++
+			oldUsersAmount += int(parseInt)
 		} else {
 			// not found is a new user
 			parseInt, err := strconv.ParseInt(bond[1][:len(bond[1])-2], 10, 64)
 			if err != nil {
 				return err
 			}
-			NewUsersCount++
-			NewUsersAmount += int(parseInt)
+			newUsersCount++
+			newUsersAmount += int(parseInt)
 		}
 	}
 
-	TotalNumberUsers := len(rowsBefore) + NewUsersCount
+	// Variables to compute
+	totalUsers := len(rowsBefore) + newUsersCount
 
-	fmt.Println(NewUsersCount, NewUsersAmount, OldUsersCount, OldUsersAmount, TotalNumberUsers)
+	// Headers and rows
+	headers := []string{"new_users_count", "new_users_amount", "old_users_count", "old_users_amount", "total_users"}
+	rows := [][]string{
+		{strconv.Itoa(newUsersCount), strconv.Itoa(newUsersAmount), strconv.Itoa(oldUsersCount), strconv.Itoa(oldUsersAmount), strconv.Itoa(totalUsers)},
+	}
 
 	if outputFormat == "csv" {
-		//err = internal.WriteCSV(filename, headers, rows)
+		err = internal.WriteCSV(filename, headers, rows)
 	} else {
-		//err = internal.WriteJSON(filename, headers, rows)
+		err = internal.WriteJSON(filename, headers, rows)
 	}
 	if err != nil {
 		log.Printf("Warning: %v", err)

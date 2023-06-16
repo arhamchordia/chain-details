@@ -27,4 +27,5 @@ func init() {
 	BigQueryRegisterRawQueryCmd(bigQueryCmd)
 	BigQueryRegisterVaultsCmd(bigQueryCmd)
 	BigQueryRegisterTransactionsCmd(bigQueryCmd)
+	BigQueryRegisterReportCmd(bigQueryCmd)
 }

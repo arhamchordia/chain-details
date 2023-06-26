@@ -1,6 +1,7 @@
 package vaults
 
 import (
+	"fmt"
 	"github.com/arhamchordia/chain-details/internal"
 	bigquerytypes "github.com/arhamchordia/chain-details/types/bigquery"
 	"log"
@@ -14,12 +15,16 @@ import (
 // - Number of old users bonding
 // - Amount bonded by old users
 // - Number of total users till today
-func QueryDailyReportBond(outputFormat string) error {
-	filename := bigquerytypes.PrefixBigQuery + bigquerytypes.PrependQueryDailyReportBond
+func QueryDailyReportBond(addressQuery string, outputFormat string) error {
+	if len(addressQuery) == 0 {
+		log.Fatal("Vault address to query is mandatory")
+	}
+
+	filename := fmt.Sprintf("%s_%s", bigquerytypes.PrefixBigQuery+bigquerytypes.PrependQueryDailyReportBond, addressQuery)
 
 	// query all the bonds before last 24h with distinct on userAddressSender,
 	// this will retrieve a list of all the current bonders without repeated values
-	_, rowsBefore, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryDailyReportBondBefore, "", false)
+	_, rowsBefore, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryDailyReportBondBefore, addressQuery, true)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
@@ -33,7 +38,7 @@ func QueryDailyReportBond(outputFormat string) error {
 
 	// query all the bonds after last 24h without distinct, then compare it with the previous result set
 	// and compute who is new, who not and the related amounts
-	_, rowsAfter, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryDailyReportBondAfter, "", false)
+	_, rowsAfter, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryDailyReportBondAfter, addressQuery, true)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
@@ -49,6 +54,7 @@ func QueryDailyReportBond(outputFormat string) error {
 
 	for _, bond := range rowsAfter {
 		tempAddr := strings.ReplaceAll(bond[0], "\"", "")
+		// looking in AddressBefore to check if the user was already existing before 24h or not
 		_, ok := AddressBefore[tempAddr]
 		if ok {
 			// found is an old user

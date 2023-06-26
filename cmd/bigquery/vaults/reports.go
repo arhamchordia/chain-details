@@ -12,7 +12,7 @@ var ReportBondCmd = &cobra.Command{
 	Long:  `TODO TODO`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := vaults.QueryDailyReportBond(config.OutputFormat)
+		err := vaults.QueryDailyReportBond(config.AddressQuery, config.OutputFormat)
 		if err != nil {
 			return err
 		}

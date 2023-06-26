@@ -47,5 +47,6 @@ func BigQueryRegisterVaultsCmd(parentCmd *cobra.Command) {
 
 func BigQueryRegisterReportCmd(parentCmd *cobra.Command) {
 	// ReportBondCmd
+	vaults.ReportBondCmd.Flags().StringVarP(&config.AddressQuery, "address", "a", "", "Vault address to query")
 	parentCmd.AddCommand(vaults.ReportBondCmd)
 }

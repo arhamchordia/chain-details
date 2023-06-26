@@ -364,8 +364,8 @@ ORDER BY
 	QueryVaultsWithdrawAddressFilter = "WHERE EXISTS (SELECT 1 FROM combined_rows c WHERE c.tx_id = combined_rows.tx_id AND c.attribute_key = 'spender' AND c.attribute_value = '%s')"
 
 	// QueryDailyReportBondBefore select distinct all the bonders before the last 24h
-	QueryDailyReportBondBefore = "SELECT DISTINCT sender FROM numia-data.quasar.quasar_osmo_pro_transactions WHERE message_type = 'bond' AND contract = 'quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu' AND block_timestamp < TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)"
+	QueryDailyReportBondBefore = "SELECT DISTINCT sender FROM numia-data.quasar.quasar_osmo_pro_transactions WHERE message_type = 'bond' AND contract = '%s' AND block_timestamp < TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)"
 
 	// QueryDailyReportBondAfter select all the bonders in the last 24h
-	QueryDailyReportBondAfter = "SELECT sender, amount FROM numia-data.quasar.quasar_osmo_pro_transactions WHERE message_type = 'bond' AND contract = 'quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu' AND block_timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)"
+	QueryDailyReportBondAfter = "SELECT sender, amount FROM numia-data.quasar.quasar_osmo_pro_transactions WHERE message_type = 'bond' AND contract = '%s' AND block_timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)"
 )

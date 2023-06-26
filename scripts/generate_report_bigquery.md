@@ -1,6 +1,6 @@
 # generate_report_bigquery.sh
 
-This script generates bond, unbond, and withdraw reports for a Google Cloud Project using the BigQuery API. The script
+This script generates bond, unbond, and claim reports for a Google Cloud Project using the BigQuery API. The script
 accepts a mandatory flag --gcp followed by the Google Cloud Project ID. Once the report is generated, it gets zipped and
 uploaded to a Slack channel.
 
@@ -14,7 +14,7 @@ uploaded to a Slack channel.
 
 - The script checks if the --gcp flag is provided and exits with an error message if not.
 - Sets the GOOGLE_CLOUD_PROJECT_ID environment variable.
-- Runs the main.go command for bond, unbond, and withdraw with different flags (default, --confirmed, --pending).
+- Runs the main.go command for bond, unbond, and claim with different flags (default, --confirmed, --pending).
 - Creates a folder named with the current date and time in the /scripts directory and moves the generated CSV files into
   it.
 - Compresses the report folder into a .zip file.

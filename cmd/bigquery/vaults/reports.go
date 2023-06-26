@@ -6,13 +6,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ReportBondCmd = &cobra.Command{
+var ReportCmd = &cobra.Command{
 	Use:   "report-bond",
 	Short: "TODO",
 	Long:  `TODO TODO`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := vaults.QueryDailyReportBond(config.AddressQuery, config.OutputFormat)
+		err := vaults.QueryDailyReport(config.AddressQuery, config.OutputFormat)
 		if err != nil {
 			return err
 		}

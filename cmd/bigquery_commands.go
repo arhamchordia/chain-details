@@ -40,13 +40,13 @@ func BigQueryRegisterVaultsCmd(parentCmd *cobra.Command) {
 	vaults.UnbondCmd.Flags().BoolVarP(&config.PendingQuery, "pending", "p", false, "Filter by pending unbond actions (optional)")
 	parentCmd.AddCommand(vaults.UnbondCmd)
 
-	// VaultWithdrawQuery
-	vaults.WithdrawCmd.Flags().StringVarP(&config.AddressQuery, "address", "a", "", "Address to query (optional)")
-	parentCmd.AddCommand(vaults.WithdrawCmd)
+	// VaultClaimQuery
+	vaults.ClaimCmd.Flags().StringVarP(&config.AddressQuery, "address", "a", "", "Address to query (optional)")
+	parentCmd.AddCommand(vaults.ClaimCmd)
 }
 
 func BigQueryRegisterReportCmd(parentCmd *cobra.Command) {
 	// ReportBondCmd
-	vaults.ReportBondCmd.Flags().StringVarP(&config.AddressQuery, "address", "a", "", "Vault address to query")
-	parentCmd.AddCommand(vaults.ReportBondCmd)
+	vaults.ReportCmd.Flags().StringVarP(&config.AddressQuery, "address", "a", "", "Vault address to query")
+	parentCmd.AddCommand(vaults.ReportCmd)
 }

@@ -227,16 +227,16 @@ func QueryUnbond(addressQuery string, confirmedQuery bool, pendingQuery bool, ou
 	return nil
 }
 
-// QueryWithdraw returns a file with the withdraw events in all the blocks
-func QueryWithdraw(addressQuery string, outputFormat string) error {
+// QueryClaim returns a file with the claim events in all the blocks
+func QueryClaim(addressQuery string, outputFormat string) error {
 	addressFilterString := ""
-	filename := bigquerytypes.PrefixBigQuery + bigquerytypes.PrependQueryVaultsWithdraw
+	filename := bigquerytypes.PrefixBigQuery + bigquerytypes.PrependQueryVaultsClaim
 	if len(addressQuery) > 0 {
-		addressFilterString = fmt.Sprintf(bigquerytypes.QueryVaultsWithdrawAddressFilter, addressQuery)
+		addressFilterString = fmt.Sprintf(bigquerytypes.QueryVaultsClaimAddressFilter, addressQuery)
 		filename = fmt.Sprintf("%s_%s", filename, addressQuery)
 	}
 
-	headers, rows, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryVaultsWithdraw, addressFilterString, true)
+	headers, rows, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryVaultsClaim, addressFilterString, true)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}

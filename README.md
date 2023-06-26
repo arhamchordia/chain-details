@@ -173,9 +173,9 @@ go run main.go bigquery bond (--address <account_address>) (--confirmed || --pen
 go run main.go bigquery unbond (--address <account_address>) (--confirmed || --pending)
 ```
 
-##### Withdraw
+##### Claim
 
-`bigquery withdraw`: Executes a SQL query to scrape all the withdrawal transactions for a given account address and generates a file with the results. Providing the address to query with the --address flag is optional.
+`bigquery claim`: Executes a SQL query to scrape all the claim transactions for a given account address and generates a file with the results. Providing the address to query with the --address flag is optional.
 ```bash
-go run main.go bigquery withdraw (--address <account_address>)
+go run main.go bigquery claim (--address <account_address>)
 ```

@@ -39,7 +39,7 @@ run_command_variants() {
         }
     done
 }
-# TODO delete this once withdraw supports variants as well
+# TODO delete this once claim supports variants as well
 run_command() {
     for base_command in "$@"; do
         go run ../main.go $base_command &
@@ -81,7 +81,7 @@ filter_csv() {
 
 # Run all command variants for bond and unbond in parallel
 run_command_variants "bigquery bond" "bigquery unbond"
-run_command "bigquery withdraw" # TODO remove this as well for the reason above
+run_command "bigquery claim" # TODO remove this as well for the reason above
 
 # Create a new folder and move generated reports inside that folder
 TODAY_DATETIME=$(date +"%Y-%m-%d_%H-%M-%S")
@@ -101,7 +101,7 @@ pending_bonds=0
 total_unbonds=0
 confirmed_unbonds=0
 pending_unbonds=0
-total_withdraws=0
+total_claims=0
 
 # Filter each CSV file and update counters
 for csv_file in ./$TODAY_DATETIME/*.csv; do
@@ -127,8 +127,8 @@ for csv_file in ./$TODAY_DATETIME/*.csv; do
     *_unbond*.csv)
         total_unbonds=$(($(wc -l < "$csv_file") - 1))
         ;;
-    *_withdraw*.csv)
-        total_withdraws=$(($(wc -l < "$csv_file") - 1))
+    *_claim*.csv)
+        total_claims=$(($(wc -l < "$csv_file") - 1))
         ;;
     esac
 done
@@ -146,8 +146,8 @@ Unbonds:
 - Total: $total_unbonds
 - Confirmed: $confirmed_unbonds
 - Pending (including pending for bonding period, ignore this): $pending_unbonds
-Withdraws:
-- Total: $total_withdraws"
+Claims:
+- Total: $total_claims"
 
 echo $summary_message
 # Upload the zip archive to Slack

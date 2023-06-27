@@ -26,18 +26,19 @@ func QueryDailyReport(addressQuery string, outputFormat string) error {
 	}
 
 	// init stat vars for bond
-	var bondNewUsersCount, bondNewUsersAmount, bondOldUsersCount, bondOldUsersAmount int
+	var dailyBondNewUsersCount, dailyBondNewUsersAmount, dailyBondOldUsersCount, dailyBondOldUsersAmount int
 	// init stat vars for unbond
-	var unbondNewUsersCount, unbondNewUsersAmount, unbondOldUsersCount, unbondOldUsersAmount int
+	var dailyUnbondUsersCount, dailyUnbondUsersAmount int
 	// init stat vars for bond
-	var bondTotalUsers int
+	var totalBondAmount, totalTxCount, generalUsersBonded, generalUsersExited int
+	// init user deposit history
+	dailyExitUsersCount := make(map[string]bool)
+	userFirstDeposit := make(map[string]time.Time)
+	// init stat vars for wall of fame
 	biggestSingleDeposit := 0
 	biggestSingleDepositor := ""
 	biggestHolder := ""
 	biggestBalance := 0
-
-	// init user deposit history
-	userFirstDeposit := make(map[string]time.Time)
 
 	for user, transactions := range rewardsUpdateUser {
 		// double check transactions are sorted by time
@@ -47,83 +48,104 @@ func QueryDailyReport(addressQuery string, outputFormat string) error {
 
 		previousBalance := 0
 		for _, transaction := range transactions {
-			// compute bond or unbond based on balance change
+			// incr total transaction count
+			totalTxCount++
+
+			// state bond or unbond based on balance change
 			change := transaction.VaultTokenBalance - previousBalance
 			if change > 0 { // Bond
-				// if this is user's first deposit
+				// increas total bond amount
+				totalBondAmount += change
+
+				// Check if this is user's first deposit
 				if _, ok := userFirstDeposit[user]; !ok {
 					// new user's deposit
-					bondNewUsersCount++
-					bondNewUsersAmount += change
+					dailyBondNewUsersCount++
+					dailyBondNewUsersAmount += change
 					userFirstDeposit[user] = transaction.IngestionTimestamp
+					// increase total bonded users count
+					generalUsersBonded++
 				} else {
-					// old user's deposit
-					bondOldUsersCount++
-					bondOldUsersAmount += change
+					//old user's deposit
+					dailyBondOldUsersCount++
+					dailyBondOldUsersAmount += change
 				}
 
-				// Check if this is the biggest single deposit
+				// check if is the biggest single deposit
 				if change > biggestSingleDeposit {
 					biggestSingleDeposit = change
 					biggestSingleDepositor = user
 				}
 			} else if change < 0 { // Unbond
-				// This is an user's withdrawal
-				unbondOldUsersCount++
-				unbondOldUsersAmount += -change // Convert negative to positive
+				dailyUnbondUsersCount++
+				dailyUnbondUsersAmount += -change // Convert negative to positive
+				// check if user completely exited
+				if transaction.VaultTokenBalance == 0 && !dailyExitUsersCount[user] {
+					dailyExitUsersCount[user] = true
+					generalUsersExited++
+				}
 			}
 
-			// Update previous balance
+			// update previous balance for nex titeration
 			previousBalance = transaction.VaultTokenBalance
 		}
 
-		// check if this user is the biggest hodler
-		if previousBalance > biggestBalance {
-			biggestBalance = previousBalance
+		userBalance := transactions[len(transactions)-1].VaultTokenBalance
+		if userBalance > biggestBalance {
+			biggestBalance = userBalance
 			biggestHolder = user
 		}
-
-		// count total users with not 0 balance
-		if previousBalance > 0 {
-			bondTotalUsers++
-		}
 	}
 
-	// Count new users' withdrawals
-	for user, firstDepositTime := range userFirstDeposit {
-		// If first deposit was less than 24 hours ago, this is a new user's withdrawal
-		if time.Since(firstDepositTime).Hours() < 24 {
-			unbondNewUsersCount++
-			unbondNewUsersAmount += rewardsUpdateUser[user][len(rewardsUpdateUser[user])-1].VaultTokenBalance
-		}
+	// Compute average bond amount and tx number per user
+	averageBondAmount := 0
+	if dailyBondNewUsersCount+dailyBondOldUsersCount != 0 {
+		averageBondAmount = totalBondAmount / (dailyBondNewUsersCount + dailyBondOldUsersCount)
 	}
 
-	// Print wall of fame
-	fmt.Printf("Biggest single deposit: %d by user %s\n", biggestSingleDeposit, biggestSingleDepositor)
-	fmt.Printf("Biggest actual holder: %s with balance %d\n", biggestHolder, biggestBalance)
+	averageTxNumber := 0
+	if len(rewardsUpdateUser) != 0 {
+		averageTxNumber = totalTxCount / len(rewardsUpdateUser)
+	}
+
+	// Count exited users and amount in the last 24h
+	dailyExitUsersAmount := 0
+	for user, exited := range dailyExitUsersCount {
+		if exited && time.Since(userFirstDeposit[user]).Hours() < 24 {
+			dailyExitUsersAmount += rewardsUpdateUser[user][len(rewardsUpdateUser[user])-1].VaultTokenBalance
+		}
+	}
 
 	headers := []string{
 		// General
-		"general_users_bonded",              // this is a general count of bonding users so far since the start of the vault
-		"general_users_exited",              // this is a general count of exited users so far since the start of the vault
-		"general_users_average_bond_amount", // this is a general average of tx per user regardless are bond or unbonds
-		"general_users_average_tx_number",   // this is a general average of tx per user regardless are bond or unbonds
+		"general_users_bonded", // this is a general count of bonding users so far since the start of the vault
+		"general_users_exited", // this is a general count of exited users so far since the start of the vault
+		"general_users_active", // this is a general count of actually active users
+		"general_users_average_bond_amount",
+		"general_users_average_tx_number",
 		// Latest 24h
-		"bond_new_users_count", "bond_new_users_amount", "bond_old_users_count", "bond_old_users_amount", // bond from new and old users
-		"unbond_users_count", "unbond_users_amount", // unbond from old users (no new users here, they are already known since bond)
-		"exit_users_count", "exit_users_amount", // complete exits from old users (the ones whom exited completely in the last 24h)
+		"24_bond_new_users_count", "24_bond_new_users_amount", "24_bond_old_users_count", "24_bond_old_users_amount", // bond from new and old users
+		"24_unbond_users_count", "24_unbond_users_amount", // unbond from old users (no new users here, they are already known since bond)
+		"24_exit_users_count", "24_exit_users_amount", // complete exits from old users (the ones whom exited completely in the last 24h)
 		// Wall of fame
-		"biggest_deposit_user", "biggest_deposit_amount", // biggest deposit
-		"biggest_holder_user", "biggest_holder_amount", // biggest hodler
+		"wall_biggest_deposit_user", "wall_biggest_deposit_amount", // biggest deposit
+		"wall_biggest_holder_user", "wall_biggest_holder_amount", // biggest hodler
 	}
 	rows := [][]string{
 		{
-			// Bond
-			strconv.Itoa(bondNewUsersCount), strconv.Itoa(bondNewUsersAmount), strconv.Itoa(bondOldUsersCount), strconv.Itoa(bondOldUsersAmount),
-			// Unbond
-			strconv.Itoa(unbondNewUsersCount), strconv.Itoa(unbondNewUsersAmount), strconv.Itoa(unbondOldUsersCount), strconv.Itoa(unbondOldUsersAmount),
 			// General
-			strconv.Itoa(bondTotalUsers),
+			strconv.Itoa(generalUsersBonded),
+			strconv.Itoa(generalUsersExited),
+			strconv.Itoa(generalUsersBonded - generalUsersExited),
+			strconv.Itoa(averageBondAmount),
+			strconv.Itoa(averageTxNumber),
+			// Latest 24h
+			strconv.Itoa(dailyBondNewUsersCount), strconv.Itoa(dailyBondNewUsersAmount), strconv.Itoa(dailyBondOldUsersCount), strconv.Itoa(dailyBondOldUsersAmount),
+			strconv.Itoa(dailyUnbondUsersCount), strconv.Itoa(dailyUnbondUsersAmount),
+			strconv.Itoa(len(dailyExitUsersCount)), strconv.Itoa(dailyExitUsersAmount),
+			// Wall of fame
+			biggestSingleDepositor, strconv.Itoa(biggestSingleDeposit),
+			biggestHolder, strconv.Itoa(biggestBalance),
 		},
 	}
 

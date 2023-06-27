@@ -7,7 +7,7 @@ import (
 )
 
 var ReportCmd = &cobra.Command{
-	Use:   "report-bond",
+	Use:   "report",
 	Short: "TODO",
 	Long:  `TODO TODO`,
 	Args:  cobra.ExactArgs(0),

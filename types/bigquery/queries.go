@@ -368,105 +368,78 @@ ORDER BY
   SELECT
     block_height,
     tx_id,
-    event_type,
-    event_source,
     attribute_key,
     attribute_value,
-    ingestion_timestamp,
-    ROW_NUMBER() OVER (PARTITION BY tx_id, attribute_key ORDER BY ingestion_timestamp) AS row_num
+    MAX(ingestion_timestamp) OVER (PARTITION BY tx_id, attribute_key) AS latest_ingestion_timestamp
   FROM
     ` + "`numia-data.quasar.quasar_event_attributes`" + `
   WHERE
     event_type = 'wasm'
-  ORDER BY
-    block_height ASC
 ),
 
-filtered_tx_ids AS (
-  SELECT DISTINCT
-    tx_id
-  FROM
-    combined_rows
-  WHERE EXISTS (
-      SELECT 1
-      FROM combined_rows c
-      WHERE c.tx_id = combined_rows.tx_id
-    )
-),
-
-valid_tx_ids AS (
-  SELECT DISTINCT
-    tx_id
+grouped_data AS (
+  SELECT
+    block_height,
+    tx_id,
+    ARRAY_AGG(STRUCT(attribute_key, attribute_value)) AS attributes,
+    MAX(latest_ingestion_timestamp) AS latest_ingestion_timestamp
   FROM
     combined_rows
   WHERE
     tx_id IN (
       SELECT tx_id
       FROM combined_rows
-      WHERE attribute_key = 'action' AND attribute_value = 'update_user_index'
+      WHERE (attribute_key = 'action' AND attribute_value = 'update_user_index')
+        AND tx_id IN (
+          SELECT tx_id 
+          FROM combined_rows 
+          WHERE attribute_key = '_contract_address' AND attribute_value = '%s'
+        )
     )
-),
-
-filtered_combined_rows AS (
-  SELECT *
-  FROM combined_rows
-  WHERE attribute_key IN ('reply-result')
-),
-
-key_value_pairs AS (
-  SELECT
-    fcr.block_height,
-    fcr.tx_id,
-    STRING_AGG(DISTINCT fcr.event_type) AS event_types,
-    STRING_AGG(DISTINCT fcr.event_source) AS event_sources,
-    fcr.attribute_key,
-    fcr.attribute_value,
-    MAX(fcr.ingestion_timestamp) AS latest_ingestion_timestamp
-  FROM
-    filtered_combined_rows fcr
-  JOIN
-    filtered_tx_ids ft
-  ON
-    fcr.tx_id = ft.tx_id
-  JOIN
-    valid_tx_ids vt
-  ON
-    fcr.tx_id = vt.tx_id
   GROUP BY
-    fcr.block_height,
-    fcr.tx_id,
-    fcr.attribute_key,
-    fcr.attribute_value
+    block_height,
+    tx_id
+),
+
+flattened_data AS (
+  SELECT
+    block_height,
+    tx_id,
+    attr.attribute_value AS user,
+    (
+      SELECT attribute_value 
+      FROM UNNEST(attributes) attr
+      WHERE attr.attribute_key = 'vault_token_balance'
+      LIMIT 1
+    ) AS vault_token_balance,
+    latest_ingestion_timestamp
+  FROM
+    grouped_data,
+    UNNEST(attributes) attr
+  WHERE
+    attr.attribute_key = 'user'
+),
+
+distinct_flattened_data AS (
+  SELECT DISTINCT
+    block_height,
+    user,
+    vault_token_balance,
+    latest_ingestion_timestamp
+  FROM
+    flattened_data
 )
 
 SELECT
-  block_height,
-  tx_id,
-  ARRAY_AGG(STRUCT(attribute_key, attribute_value)) AS attribute_pairs,
-  MAX(latest_ingestion_timestamp) AS latest_ingestion_timestamp
+  user,
+  ARRAY_AGG(
+    STRUCT(block_height, vault_token_balance, latest_ingestion_timestamp) 
+    ORDER BY block_height ASC
+  ) AS user_transactions
 FROM
-  key_value_pairs
+  distinct_flattened_data
 GROUP BY
-  block_height,
-  tx_id
+  user
 ORDER BY
-  block_height ASC;`
-
-	// QueryDailyReportBondBefore select distinct all the bonders before the last 24h
-	QueryDailyReportBondBefore = "SELECT DISTINCT sender FROM numia-data.quasar.quasar_osmo_pro_transactions WHERE message_type = 'bond' AND contract = '%s' AND block_timestamp < TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)"
-
-	// QueryDailyReportBondAfter select all the bonders in the last 24h
-	QueryDailyReportBondAfter = "SELECT sender, amount FROM numia-data.quasar.quasar_osmo_pro_transactions WHERE message_type = 'bond' AND contract = '%s' AND block_timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)"
-
-	// QueryDailyReportUnbondBefore select distinct all the bonders before the last 24h
-	QueryDailyReportUnbondBefore = "SELECT DISTINCT sender FROM numia-data.quasar.quasar_osmo_pro_transactions WHERE message_type = 'unbond' AND contract = '%s' AND block_timestamp < TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)"
-
-	// QueryDailyReportUnbondAfter select all the bonders in the last 24h
-	QueryDailyReportUnbondAfter = "SELECT sender, amount FROM numia-data.quasar.quasar_osmo_pro_transactions WHERE message_type = 'unbond' AND contract = '%s' AND block_timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)"
-
-	// QueryDailyReportClaimBefore select distinct all the bonders before the last 24h
-	QueryDailyReportClaimBefore = "SELECT DISTINCT sender FROM numia-data.quasar.quasar_osmo_pro_transactions WHERE message_type = 'claim' AND contract = '%s' AND block_timestamp < TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)"
-
-	// QueryDailyReportClaimAfter select all the bonders in the last 24h
-	QueryDailyReportClaimAfter = "SELECT sender, amount FROM numia-data.quasar.quasar_osmo_pro_transactions WHERE message_type = 'claim' AND contract = '%s' AND block_timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)"
+  user ASC;`
 )

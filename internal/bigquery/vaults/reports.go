@@ -68,15 +68,15 @@ func QueryDailyReport(addressQuery string, outputFormat string) error {
 				// TODO: this is wrong, wtf
 				if _, ok := userFirstDeposit[user]; !ok {
 					// new user's deposit
-					dailyBondNewUsersCount++ // TODO: check
-					dailyBondNewUsersAmount += change
+					dailyBondNewUsersCount++          // TODO: this should increase only if less than 24h ago, not related to the userFirstDeposit
+					dailyBondNewUsersAmount += change // TODO: this should increase only if less than 24h ago, not related to the userFirstDeposit
 					userFirstDeposit[user] = transaction.IngestionTimestamp
 					// increase total bonded users count
 					generalUsersBonded++
 				} else {
 					//old user's deposit
-					dailyBondOldUsersCount++ // TODO: check
-					dailyBondOldUsersAmount += change
+					dailyBondOldUsersCount++          // TODO: this should increase only if less than 24h ago, not related to the userFirstDeposit
+					dailyBondOldUsersAmount += change // TODO: this should increase only if less than 24h ago, not related to the userFirstDeposit
 				}
 
 				// check if is the biggest single deposit
@@ -90,6 +90,7 @@ func QueryDailyReport(addressQuery string, outputFormat string) error {
 				dailyUnbondUsersCount++
 				dailyUnbondUsersAmount += -change // Convert negative to positive
 				// check if user completely exited
+				// TODO consider that this worth only if in addition to be 0 it is the latest transaction of the user, or he could have joined again afterward
 				if transaction.VaultTokenBalance == 0 && !dailyExitUsersCount[user] {
 					dailyExitUsersCount[user] = true // TODO: this should be set only if less than 24h
 					generalUsersExited++

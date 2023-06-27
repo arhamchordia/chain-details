@@ -12,6 +12,11 @@ import (
 	"time"
 )
 
+type UpdateIndex struct {
+	VaultTokenBalance  int
+	IngestionTimestamp time.Time
+}
+
 // QueryDailyReport returns a file with the last 24h statistics of a given vaultAddress
 func QueryDailyReport(addressQuery string, outputFormat string) error {
 	if len(addressQuery) == 0 {
@@ -25,28 +30,30 @@ func QueryDailyReport(addressQuery string, outputFormat string) error {
 		return err
 	}
 
-	// init stat vars for bond
+	// Response variables
+	// - General
+	var generalUsersBonded, generalUsersExited, generalAverageBondAmount, generalAverageTxNumber int
+	// - Latest 24h
 	var dailyBondNewUsersCount, dailyBondNewUsersAmount, dailyBondOldUsersCount, dailyBondOldUsersAmount int
-	// init stat vars for unbond
-	var dailyUnbondUsersCount, dailyUnbondUsersAmount int
-	// init stat vars for bond
-	var totalBondAmount, totalTxCount, generalUsersBonded, generalUsersExited int
-	// init user deposit history
+	var dailyUnbondUsersCount, dailyUnbondUsersAmount, dailyExitUsersAmount int
+	// - Wall of fame
+	var biggestSingleDepositor, biggestHolder string
+	var biggestSingleDeposit, biggestBalance int
+
+	// Utility variables
+	var totalBondAmount, totalTxCount int
 	dailyExitUsersCount := make(map[string]bool)
 	userFirstDeposit := make(map[string]time.Time)
-	// init stat vars for wall of fame
-	biggestSingleDeposit := 0
-	biggestSingleDepositor := ""
-	biggestHolder := ""
-	biggestBalance := 0
 
+	// Computation of statistics
 	for user, transactions := range rewardsUpdateUser {
 		// double check transactions are sorted by time
 		sort.Slice(transactions, func(i, j int) bool {
 			return transactions[i].IngestionTimestamp.Before(transactions[j].IngestionTimestamp)
 		})
 
-		previousBalance := 0
+		// declaring a 0 previousBalance foreach user we iterate its transactions
+		var previousBalance int
 		for _, transaction := range transactions {
 			// incr total transaction count
 			totalTxCount++
@@ -58,16 +65,17 @@ func QueryDailyReport(addressQuery string, outputFormat string) error {
 				totalBondAmount += change
 
 				// Check if this is user's first deposit
+				// TODO: this is wrong, wtf
 				if _, ok := userFirstDeposit[user]; !ok {
 					// new user's deposit
-					dailyBondNewUsersCount++
+					dailyBondNewUsersCount++ // TODO: check
 					dailyBondNewUsersAmount += change
 					userFirstDeposit[user] = transaction.IngestionTimestamp
 					// increase total bonded users count
 					generalUsersBonded++
 				} else {
 					//old user's deposit
-					dailyBondOldUsersCount++
+					dailyBondOldUsersCount++ // TODO: check
 					dailyBondOldUsersAmount += change
 				}
 
@@ -76,17 +84,19 @@ func QueryDailyReport(addressQuery string, outputFormat string) error {
 					biggestSingleDeposit = change
 					biggestSingleDepositor = user
 				}
-			} else if change < 0 { // Unbond
+			} else if change <= 0 { // Unbond TODO: double check if <= is fine or we need <
+				// TODO: the dailyUnbondUsersCount and dailyUnbondUsersAmount increment should be done only if less than 24h
+				time.Since(transaction.IngestionTimestamp)
 				dailyUnbondUsersCount++
 				dailyUnbondUsersAmount += -change // Convert negative to positive
 				// check if user completely exited
 				if transaction.VaultTokenBalance == 0 && !dailyExitUsersCount[user] {
-					dailyExitUsersCount[user] = true
+					dailyExitUsersCount[user] = true // TODO: this should be set only if less than 24h
 					generalUsersExited++
 				}
 			}
 
-			// update previous balance for nex titeration
+			// update previous balance for next iteration
 			previousBalance = transaction.VaultTokenBalance
 		}
 
@@ -98,18 +108,14 @@ func QueryDailyReport(addressQuery string, outputFormat string) error {
 	}
 
 	// Compute average bond amount and tx number per user
-	averageBondAmount := 0
 	if dailyBondNewUsersCount+dailyBondOldUsersCount != 0 {
-		averageBondAmount = totalBondAmount / (dailyBondNewUsersCount + dailyBondOldUsersCount)
+		generalAverageBondAmount = totalBondAmount / (dailyBondNewUsersCount + dailyBondOldUsersCount)
 	}
-
-	averageTxNumber := 0
 	if len(rewardsUpdateUser) != 0 {
-		averageTxNumber = totalTxCount / len(rewardsUpdateUser)
+		generalAverageTxNumber = totalTxCount / len(rewardsUpdateUser)
 	}
 
 	// Count exited users and amount in the last 24h
-	dailyExitUsersAmount := 0
 	for user, exited := range dailyExitUsersCount {
 		if exited && time.Since(userFirstDeposit[user]).Hours() < 24 {
 			dailyExitUsersAmount += rewardsUpdateUser[user][len(rewardsUpdateUser[user])-1].VaultTokenBalance
@@ -137,8 +143,8 @@ func QueryDailyReport(addressQuery string, outputFormat string) error {
 			strconv.Itoa(generalUsersBonded),
 			strconv.Itoa(generalUsersExited),
 			strconv.Itoa(generalUsersBonded - generalUsersExited),
-			strconv.Itoa(averageBondAmount),
-			strconv.Itoa(averageTxNumber),
+			strconv.Itoa(generalAverageBondAmount),
+			strconv.Itoa(generalAverageTxNumber),
 			// Latest 24h
 			strconv.Itoa(dailyBondNewUsersCount), strconv.Itoa(dailyBondNewUsersAmount), strconv.Itoa(dailyBondOldUsersCount), strconv.Itoa(dailyBondOldUsersAmount),
 			strconv.Itoa(dailyUnbondUsersCount), strconv.Itoa(dailyUnbondUsersAmount),
@@ -160,11 +166,6 @@ func QueryDailyReport(addressQuery string, outputFormat string) error {
 	}
 
 	return nil
-}
-
-type UpdateIndex struct {
-	VaultTokenBalance  int
-	IngestionTimestamp time.Time
 }
 
 func parseTransactions(input string) ([][]string, error) {
@@ -194,6 +195,7 @@ func queryDailyReportRewardsUpdateUser(addressQuery string) (map[string][]Update
 	for _, row := range rows {
 		user := row[0] // is i.e. quasar103dsgfltsaykm0x4sd0mf4yj3wjht9ruyv3ckl
 
+		// TODO: we could remove the blockHeight from here which is uncomputed and slowing things
 		transactions, err := parseTransactions(row[1]) // is i.e. [[211310 1919557 "2023-04-05 16:38:38 +0000 UTC"] [286844 0 "2023-04-10 15:07:56 +0000 UTC"]]
 		if err != nil {
 			log.Fatalf("%v", err)

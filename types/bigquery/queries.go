@@ -375,7 +375,7 @@ ORDER BY
     ` + "`numia-data.quasar.quasar_event_attributes`" + `
   WHERE
     event_type = 'wasm'
-	AND block_height > %d
+	AND block_height >= %d
 ),
 
 grouped_data AS (

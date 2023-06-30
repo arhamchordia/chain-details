@@ -12,37 +12,47 @@ import (
 	"time"
 )
 
+type Unbond struct {
+	Amount             int
+	IngestionTimestamp time.Time
+}
+
 type UpdateIndex struct {
 	VaultTokenBalance  int
 	IngestionTimestamp time.Time
 }
 
 // QueryDailyReport returns a file with the last 24h statistics of a given vaultAddress
-func QueryDailyReport(addressQuery string, outputFormat string) error {
+func QueryDailyReport(blockHeight int, addressQuery string, outputFormat string) error {
 	if len(addressQuery) == 0 {
 		log.Fatal("Vault address to query is mandatory")
+	}
+	if blockHeight < 1 {
+		log.Fatal("Block height should be higher than 0")
 	}
 
 	filename := fmt.Sprintf("%s_%s", bigquerytypes.PrefixBigQuery+bigquerytypes.PrependQueryDailyReport, addressQuery)
 
-	rewardsUpdateUser, err := queryDailyReportRewardsUpdateUser(addressQuery)
+	rewardsUpdateUser, err := queryDailyReportRewardsUpdateUser(blockHeight, addressQuery)
 	if err != nil {
 		return err
 	}
 
 	// Response variables
 	// - General
-	var generalUsersBonded, generalUsersExited, generalAverageBondAmount, generalAverageTxNumber int
+	var generalUsersBonded, generalUsersExited, generalUnbondAmountPending, generalAverageBondAmount, generalAverageTxNumber int
 	// - Latest 24h
 	var dailyBondNewUsersCount, dailyBondNewUsersAmount, dailyBondOldUsersCount, dailyBondOldUsersAmount int
-	var dailyUnbondUsersCount, dailyUnbondUsersAmount, dailyExitUsersAmount int
+	var dailyUnbondUsersCount, dailyUnbondUsersAmount int
+	dailyExitUsersCount := make(map[string]bool)
+	var dailyExitUsersAmount int
 	// - Wall of fame
 	var biggestSingleDepositor, biggestHolder string
 	var biggestSingleDeposit, biggestBalance int
 
 	// Utility variables
-	var totalBondAmount, totalTxCount int
-	dailyExitUsersCount := make(map[string]bool)
+	var totalBondCount, totalBondAmount, totalTxCount int
+	totalUnbondCount := make(map[int]Unbond)
 	userFirstDeposit := make(map[string]time.Time)
 
 	// Computation of statistics
@@ -54,29 +64,41 @@ func QueryDailyReport(addressQuery string, outputFormat string) error {
 
 		// declaring a 0 previousBalance foreach user we iterate its transactions
 		var previousBalance int
-		for _, transaction := range transactions {
+		for i, transaction := range transactions {
 			// incr total transaction count
 			totalTxCount++
 
 			// state bond or unbond based on balance change
 			change := transaction.VaultTokenBalance - previousBalance
-			if change > 0 { // Bond
-				// increas total bond amount
+			// state if the current tx is older than 24h from now
+			isDailyTransaction := time.Since(transaction.IngestionTimestamp).Hours() <= 24
+
+			// Bond if change respect previous balance is positive
+			if change > 0 {
+				// increase total bond count and amount
+				totalBondCount++
 				totalBondAmount += change
 
 				// Check if this is user's first deposit
-				// TODO: this is wrong, wtf
 				if _, ok := userFirstDeposit[user]; !ok {
-					// new user's deposit
-					dailyBondNewUsersCount++          // TODO: this should increase only if less than 24h ago, not related to the userFirstDeposit
-					dailyBondNewUsersAmount += change // TODO: this should increase only if less than 24h ago, not related to the userFirstDeposit
+					// new user's deposit as this is the first deposit for him
+					if isDailyTransaction {
+						// only if since less than 24h we increase daily variables
+						dailyBondNewUsersCount++
+						dailyBondNewUsersAmount += change
+					}
+					// we set the ingestion timestamp for the user's first bond
 					userFirstDeposit[user] = transaction.IngestionTimestamp
 					// increase total bonded users count
 					generalUsersBonded++
-				} else {
-					//old user's deposit
-					dailyBondOldUsersCount++          // TODO: this should increase only if less than 24h ago, not related to the userFirstDeposit
-					dailyBondOldUsersAmount += change // TODO: this should increase only if less than 24h ago, not related to the userFirstDeposit
+				} else if ok && isDailyTransaction { //old user's deposit
+					// if we are here we know this is NOT the first bond
+					// so only if the first bond is since more than 24h we increase daily variables
+					if time.Since(userFirstDeposit[user]).Hours() > 24 {
+						dailyBondOldUsersCount++
+						dailyBondOldUsersAmount += change
+					}
+					// TODO: check if else needed in order to increase general stats
 				}
 
 				// check if is the biggest single deposit
@@ -84,15 +106,27 @@ func QueryDailyReport(addressQuery string, outputFormat string) error {
 					biggestSingleDeposit = change
 					biggestSingleDepositor = user
 				}
-			} else if change <= 0 { // Unbond TODO: double check if <= is fine or we need <
-				// TODO: the dailyUnbondUsersCount and dailyUnbondUsersAmount increment should be done only if less than 24h
-				time.Since(transaction.IngestionTimestamp)
-				dailyUnbondUsersCount++
-				dailyUnbondUsersAmount += -change // Convert negative to positive
-				// check if user completely exited
-				// TODO consider that this worth only if in addition to be 0 it is the latest transaction of the user, or he could have joined again afterward
-				if transaction.VaultTokenBalance == 0 && !dailyExitUsersCount[user] {
-					dailyExitUsersCount[user] = true // TODO: this should be set only if less than 24h
+			} else if change <= 0 { // else is an Unbond
+				// increase total unbond count and amount
+				totalUnbondCount[len(totalUnbondCount)] = Unbond{ // this struct serves for later use
+					Amount:             -change,
+					IngestionTimestamp: transaction.IngestionTimestamp,
+				}
+				//totalUnbondAmount += -change // Convert negative to positive TODO check if needced or not! if yes reimplement above on vars initialization
+
+				// we check if the unbond is from the latest 24h
+				if isDailyTransaction {
+					// so we increase the count and amount
+					dailyUnbondUsersCount++
+					dailyUnbondUsersAmount += -change // Convert negative to positive
+				}
+				// then we check if user completely exited by checking if the current tx balance is 0 && is the latest user tx
+				if transaction.VaultTokenBalance == 0 && i == len(transactions)-1 {
+					if isDailyTransaction {
+						// filling map for future computation outside this whole for loop
+						dailyExitUsersCount[user] = true
+					}
+					// increasing general count of users exited completely regardless the timeframe of 24h
 					generalUsersExited++
 				}
 			}
@@ -101,6 +135,7 @@ func QueryDailyReport(addressQuery string, outputFormat string) error {
 			previousBalance = transaction.VaultTokenBalance
 		}
 
+		// here we take the latest balance of the current iter user to determine who is the biggest current holder of shares
 		userBalance := transactions[len(transactions)-1].VaultTokenBalance
 		if userBalance > biggestBalance {
 			biggestBalance = userBalance
@@ -108,51 +143,75 @@ func QueryDailyReport(addressQuery string, outputFormat string) error {
 		}
 	}
 
+	// Count exited amount in the last 24h
+	for user := range dailyExitUsersCount {
+		if time.Since(rewardsUpdateUser[user][len(rewardsUpdateUser[user])-1].IngestionTimestamp).Hours() <= 24 { // taking -1 as it is the exit itself
+			dailyExitUsersAmount += rewardsUpdateUser[user][len(rewardsUpdateUser[user])-2].VaultTokenBalance // taking -2 as it is the previous to latest tx by user whom exited completely
+		}
+	}
+
+	// check for unbonds pending 14 days
+	for _, unbond := range totalUnbondCount {
+		// if the unbond is from less than twoWeeksInHours means that is pending to claim (osmosis pools unbond time)
+		if time.Since(unbond.IngestionTimestamp).Hours() < 336 { // 336 = 24hrs * 14days
+			generalUnbondAmountPending += unbond.Amount
+		}
+	}
+
 	// Compute average bond amount and tx number per user
-	if dailyBondNewUsersCount+dailyBondOldUsersCount != 0 {
-		generalAverageBondAmount = totalBondAmount / (dailyBondNewUsersCount + dailyBondOldUsersCount)
+	if totalBondCount != 0 {
+		generalAverageBondAmount = totalBondAmount / totalBondCount
 	}
 	if len(rewardsUpdateUser) != 0 {
 		generalAverageTxNumber = totalTxCount / len(rewardsUpdateUser)
 	}
 
-	// Count exited users and amount in the last 24h
-	for user, exited := range dailyExitUsersCount {
-		if exited && time.Since(userFirstDeposit[user]).Hours() < 24 {
-			dailyExitUsersAmount += rewardsUpdateUser[user][len(rewardsUpdateUser[user])-1].VaultTokenBalance
-		}
-	}
-
 	headers := []string{
+		// Latest 24h
+		"24_bond_new_users_count",
+		"24_bond_new_users_amount",
+		"24_bond_old_users_count",
+		"24_bond_old_users_amount",
+		"24_unbond_users_count",
+		"24_unbond_users_amount", // unbond from old users (no new users here, they are already known since bond)
+		"24_exit_users_count",
+		"24_exit_users_amount", // complete exits from old users (the ones whom exited completely in the last 24h)
 		// General
-		"general_users_bonded", // this is a general count of bonding users so far since the start of the vault
-		"general_users_exited", // this is a general count of exited users so far since the start of the vault
-		"general_users_active", // this is a general count of actually active users
+		"general_users_bonded",          // this is a general count of bonding users so far since the start of the vault
+		"general_users_exited",          // this is a general count of exited users so far since the start of the vault
+		"general_users_active",          // this is a general count of actually active users
+		"general_unbond_amount_pending", // the unbonding amount pending to be claimable
 		"general_users_average_bond_amount",
 		"general_users_average_tx_number",
-		// Latest 24h
-		"24_bond_new_users_count", "24_bond_new_users_amount", "24_bond_old_users_count", "24_bond_old_users_amount", // bond from new and old users
-		"24_unbond_users_count", "24_unbond_users_amount", // unbond from old users (no new users here, they are already known since bond)
-		"24_exit_users_count", "24_exit_users_amount", // complete exits from old users (the ones whom exited completely in the last 24h)
 		// Wall of fame
-		"wall_biggest_deposit_user", "wall_biggest_deposit_amount", // biggest deposit
-		"wall_biggest_holder_user", "wall_biggest_holder_amount", // biggest hodler
+		"wall_biggest_deposit_user",
+		"wall_biggest_deposit_amount",
+		"wall_biggest_holder_user",
+		"wall_biggest_holder_amount",
 	}
 	rows := [][]string{
 		{
+			// Latest 24h
+			strconv.Itoa(dailyBondNewUsersCount),
+			strconv.Itoa(dailyBondNewUsersAmount), // TODO: here we should convert shares in to denom
+			strconv.Itoa(dailyBondOldUsersCount),
+			strconv.Itoa(dailyBondOldUsersAmount), // TODO: here we should convert shares in to denom
+			strconv.Itoa(dailyUnbondUsersCount),
+			strconv.Itoa(dailyUnbondUsersAmount), // TODO: here we should convert shares in to denom
+			strconv.Itoa(len(dailyExitUsersCount)),
+			strconv.Itoa(dailyExitUsersAmount), // TODO: here we should convert shares in to denom
 			// General
 			strconv.Itoa(generalUsersBonded),
 			strconv.Itoa(generalUsersExited),
 			strconv.Itoa(generalUsersBonded - generalUsersExited),
-			strconv.Itoa(generalAverageBondAmount),
+			strconv.Itoa(generalUnbondAmountPending),
+			strconv.Itoa(generalAverageBondAmount), // TODO: here we should convert shares in to denom
 			strconv.Itoa(generalAverageTxNumber),
-			// Latest 24h
-			strconv.Itoa(dailyBondNewUsersCount), strconv.Itoa(dailyBondNewUsersAmount), strconv.Itoa(dailyBondOldUsersCount), strconv.Itoa(dailyBondOldUsersAmount),
-			strconv.Itoa(dailyUnbondUsersCount), strconv.Itoa(dailyUnbondUsersAmount),
-			strconv.Itoa(len(dailyExitUsersCount)), strconv.Itoa(dailyExitUsersAmount),
 			// Wall of fame
-			biggestSingleDepositor, strconv.Itoa(biggestSingleDeposit),
-			biggestHolder, strconv.Itoa(biggestBalance),
+			biggestSingleDepositor,
+			strconv.Itoa(biggestSingleDeposit),
+			biggestHolder,
+			strconv.Itoa(biggestBalance),
 		},
 	}
 
@@ -184,8 +243,9 @@ func parseTransactions(input string) ([][]string, error) {
 	return transactions, nil
 }
 
-func queryDailyReportRewardsUpdateUser(addressQuery string) (map[string][]UpdateIndex, error) {
-	_, rows, err := internal.ExecuteQueryAndFetchRows(bigquerytypes.QueryDailyReportRewardsUpdateUser, addressQuery, true)
+func queryDailyReportRewardsUpdateUser(blockHeight int, addressQuery string) (map[string][]UpdateIndex, error) {
+	fmt.Println(fmt.Sprintf(bigquerytypes.QueryDailyReportRewardsUpdateUser, blockHeight, addressQuery))
+	_, rows, err := internal.ExecuteQueryAndFetchRows(fmt.Sprintf(bigquerytypes.QueryDailyReportRewardsUpdateUser, blockHeight, addressQuery), "", false)
 	if err != nil {
 		log.Fatalf("%v", err)
 		return nil, err

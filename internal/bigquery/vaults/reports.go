@@ -256,7 +256,6 @@ func queryDailyReportRewardsUpdateUser(blockHeight int, addressQuery string) (ma
 	for _, row := range rows {
 		user := row[0] // is i.e. quasar103dsgfltsaykm0x4sd0mf4yj3wjht9ruyv3ckl
 
-		// TODO: we could remove the blockHeight from here which is uncomputed and slowing things
 		transactions, err := parseTransactions(row[1]) // is i.e. [[211310 1919557 "2023-04-05 16:38:38 +0000 UTC"] [286844 0 "2023-04-10 15:07:56 +0000 UTC"]]
 		if err != nil {
 			log.Fatalf("%v", err)

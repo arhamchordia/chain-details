@@ -51,7 +51,7 @@ func QueryDailyReport(blockHeight int, addressQuery string, outputFormat string)
 	var biggestSingleDeposit, biggestBalance int
 
 	// Utility variables
-	var totalBondCount, totalBondAmount, totalTxCount int
+	var totalBondCount, totalBondAmount, totalUnbondAmount, totalTxCount int
 	totalUnbondCount := make(map[int]Unbond)
 	userFirstDeposit := make(map[string]time.Time)
 
@@ -108,6 +108,7 @@ func QueryDailyReport(blockHeight int, addressQuery string, outputFormat string)
 				}
 			} else if change <= 0 { // else is an Unbond
 				// increase total unbond count and amount
+				totalUnbondAmount += -change
 				totalUnbondCount[len(totalUnbondCount)] = Unbond{ // this struct serves for later use
 					Amount:             -change,
 					IngestionTimestamp: transaction.IngestionTimestamp,
@@ -180,6 +181,7 @@ func QueryDailyReport(blockHeight int, addressQuery string, outputFormat string)
 		"general_users_bonded",          // this is a general count of bonding users so far since the start of the vault
 		"general_users_exited",          // this is a general count of exited users so far since the start of the vault
 		"general_users_active",          // this is a general count of actually active users
+		"general_amount_active",         // this is a general count of actually active users
 		"general_unbond_amount_pending", // the unbonding amount pending to be claimable
 		"general_users_average_bond_amount",
 		"general_users_average_tx_number",
@@ -204,6 +206,7 @@ func QueryDailyReport(blockHeight int, addressQuery string, outputFormat string)
 			strconv.Itoa(generalUsersBonded),
 			strconv.Itoa(generalUsersExited),
 			strconv.Itoa(generalUsersBonded - generalUsersExited),
+			strconv.Itoa(totalBondAmount - totalUnbondAmount),
 			strconv.Itoa(generalUnbondAmountPending),
 			strconv.Itoa(generalAverageBondAmount), // TODO: here we should convert shares in to denom
 			strconv.Itoa(generalAverageTxNumber),

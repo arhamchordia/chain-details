@@ -113,7 +113,6 @@ func QueryDailyReport(blockHeight int, addressQuery string, outputFormat string)
 					Amount:             -change,
 					IngestionTimestamp: transaction.IngestionTimestamp,
 				}
-				//totalUnbondAmount += -change // Convert negative to positive TODO check if needced or not! if yes reimplement above on vars initialization
 
 				// we check if the unbond is from the latest 24h
 				if isDailyTransaction {

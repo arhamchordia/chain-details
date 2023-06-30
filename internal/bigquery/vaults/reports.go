@@ -244,7 +244,6 @@ func parseTransactions(input string) ([][]string, error) {
 }
 
 func queryDailyReportRewardsUpdateUser(blockHeight int, addressQuery string) (map[string][]UpdateIndex, error) {
-	fmt.Println(fmt.Sprintf(bigquerytypes.QueryDailyReportRewardsUpdateUser, blockHeight, addressQuery))
 	_, rows, err := internal.ExecuteQueryAndFetchRows(fmt.Sprintf(bigquerytypes.QueryDailyReportRewardsUpdateUser, blockHeight, addressQuery), "", false)
 	if err != nil {
 		log.Fatalf("%v", err)

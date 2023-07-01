@@ -34,13 +34,13 @@ var UnbondCmd = &cobra.Command{
 	},
 }
 
-var WithdrawCmd = &cobra.Command{
-	Use:   "withdraw",
-	Short: "Generates csv files with wasm vault withdraw data",
-	Long:  `This command allows you to query all the withdraw actions to the Quasar Vault. Provide optionally the address to filter for with the --address flag.`,
+var ClaimCmd = &cobra.Command{
+	Use:   "claim",
+	Short: "Generates csv files with wasm vault claim data",
+	Long:  `This command allows you to query all the claim actions to the Quasar Vault. Provide optionally the address to filter for with the --address flag.`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := vaults.QueryWithdraw(config.AddressQuery, config.OutputFormat)
+		err := vaults.QueryClaim(config.AddressQuery, config.OutputFormat)
 		if err != nil {
 			return err
 		}

@@ -144,8 +144,9 @@ var DepositorsBeginUnlockingCmd = &cobra.Command{
 	},
 }
 
-var ParseAllDataCmd = &cobra.Command{
-	Use:   "parse-all [rpc-url] start-height end-height",
+// DepositorsReplayChainCmd TODO: This looks out of context here. If it is not related to depositors please move it away
+var DepositorsReplayChainCmd = &cobra.Command{
+	Use:   "depositors-replay-chain [rpc-url] start-height end-height",
 	Short: "Queries data for all kinds",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -159,7 +160,7 @@ var ParseAllDataCmd = &cobra.Command{
 			return err
 		}
 
-		err = grpc.ReplayChain(rpcURL, startingHeight, endHeight)
+		err = grpc.QueryDepositorsReplayChain(rpcURL, startingHeight, endHeight)
 		if err != nil {
 			return err
 		}

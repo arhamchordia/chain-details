@@ -166,6 +166,7 @@ func QueryDepositorsUnbond(RPCAddress string, startingHeight, endHeight int64) e
 	}
 
 	// TODO add prefix and rename
+
 	err = os.WriteFile("replay-unbond"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
@@ -456,7 +457,7 @@ func QueryDepositorsBeginUnlocking(RPCAddress string, startingHeight, endHeight 
 	return nil
 }
 
-func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
+func QueryDepositorsReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 	// create an rpcClient with the given RPCAddress
 	rpcClient, err := http.New(RPCAddress, grpctypes.Websocket)
 	if err != nil {

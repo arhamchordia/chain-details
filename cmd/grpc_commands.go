@@ -16,6 +16,7 @@ func GRPCRegisterDepositorsCmd(parentCmd *cobra.Command) {
 	parentCmd.AddCommand(grpc.DepositorsMintsCmd)
 	parentCmd.AddCommand(grpc.DepositorsCallbackInfoCmd)
 	parentCmd.AddCommand(grpc.DepositorsBeginUnlockingCmd)
+	parentCmd.AddCommand(grpc.DepositorsReplayChainCmd)
 }
 
 func GRPCRegisterGenesisCmd(parentCmd *cobra.Command) {

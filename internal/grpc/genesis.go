@@ -1,16 +1,45 @@
-package internal
+package grpc
 
 import (
-	"strconv"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
+	"encoding/json"
+	"github.com/arhamchordia/chain-details/internal"
 	"github.com/arhamchordia/chain-details/types"
+	grpctypes "github.com/arhamchordia/chain-details/types/grpc"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"io"
+	"net/http"
+	"strconv"
 )
 
-// ParseVestingAccounts parses all the vesting accounts in genesis file and
+func QueryGenesisJSON(jsonURL, denom string) error {
+	res, err := http.Get(jsonURL)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	var response types.Genesis
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return err
+	}
+
+	err = parseVestingAccounts(response.AppState.Auth.Accounts, denom)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// parseVestingAccounts parses all the vesting accounts in genesis file and
 // returns and error if anything fails
-func ParseVestingAccounts(vestingAccounts []types.Account, denom string) error {
+func parseVestingAccounts(vestingAccounts []types.Account, denom string) error {
 	// initialise all types of vesting account arrays
 	var (
 		delayedVestingAccounts    []types.DelayedVestingAccount
@@ -25,7 +54,7 @@ func ParseVestingAccounts(vestingAccounts []types.Account, denom string) error {
 		switch account.GetType() {
 		// only end time and tokens are stored in delayed vesting account
 		// as the tokens are locked till the end time of the vesting
-		case types.IdentifierDelayedVestingAccount:
+		case grpctypes.IdentifierDelayedVestingAccount:
 			// get end time
 			endTime, err := account.GetEndTime()
 			if err != nil {
@@ -42,7 +71,7 @@ func ParseVestingAccounts(vestingAccounts []types.Account, denom string) error {
 
 		// in continuous vesting account, the tokens are continuously being freed up every block
 		// tokens every block = tokens / number of block between the period
-		case types.IdentifierContinuousVestingAccount:
+		case grpctypes.IdentifierContinuousVestingAccount:
 			// convert start time and end time in int
 			startTimeUNIX, err := account.GetStartTimeUNIX()
 			if err != nil {
@@ -54,8 +83,8 @@ func ParseVestingAccounts(vestingAccounts []types.Account, denom string) error {
 			}
 
 			// calculate number of blocks generated during that period and number of days in between the period
-			numberOfBlockInBetween := int64((endTimeUNIX - startTimeUNIX) / types.AverageBlockTime)
-			numberOfDayaInBetween := int64((endTimeUNIX - startTimeUNIX) / types.SecondsInADay)
+			numberOfBlockInBetween := int64((endTimeUNIX - startTimeUNIX) / grpctypes.AverageBlockTime)
+			numberOfDayaInBetween := int64((endTimeUNIX - startTimeUNIX) / grpctypes.SecondsInADay)
 
 			// calculate tokens freed up every block and everyday
 			tokensFreeEveryBlock := account.GetOriginalVesting().AmountOf(denom).Quo(sdk.NewInt(numberOfBlockInBetween))
@@ -86,7 +115,7 @@ func ParseVestingAccounts(vestingAccounts []types.Account, denom string) error {
 
 		// in permanent locked account, the tokens are locked forever and can
 		// can only be used in case of delegating and participating in governance
-		case types.IdentifierPermanentLockedAccount:
+		case grpctypes.IdentifierPermanentLockedAccount:
 			permanentLockedAccounts = append(
 				permanentLockedAccounts,
 				types.PermanentLockedAccount{
@@ -96,7 +125,7 @@ func ParseVestingAccounts(vestingAccounts []types.Account, denom string) error {
 
 		// in periodic vesting accounts, the tokens are freed up during the mentioned
 		// periods in the vesting_period array.
-		case types.IdentifierPeriodicVestingAccount:
+		case grpctypes.IdentifierPeriodicVestingAccount:
 			// calculate start time in UNIX
 			startTimeUNIX, err := account.GetStartTimeUNIX()
 			if err != nil {
@@ -173,15 +202,15 @@ func ParseVestingAccounts(vestingAccounts []types.Account, denom string) error {
 		)
 	}
 
-	err := WriteCSV(
-		types.GenesisAccountAnalysisFileName,
+	err := internal.WriteCSV(
+		grpctypes.PrefixGRPC+grpctypes.GenesisAccountAnalysisFileName,
 		[]string{
-			types.HeaderAddress,
-			types.HeaderOriginalVesting,
-			types.HeaderVestingEndTime,
-			types.HeaderVestingStartTime,
-			types.HeaderTokensFreeEveryBlock,
-			types.HeaderTokensFreeEveryDay,
+			grpctypes.HeaderAddress,
+			grpctypes.HeaderOriginalVesting,
+			grpctypes.HeaderVestingEndTime,
+			grpctypes.HeaderVestingStartTime,
+			grpctypes.HeaderTokensFreeEveryBlock,
+			grpctypes.HeaderTokensFreeEveryDay,
 		},
 		data,
 	)

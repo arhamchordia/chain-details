@@ -2,11 +2,27 @@ package internal
 
 import (
 	"encoding/csv"
+	"fmt"
 	"os"
+	"path/filepath"
+	"strconv"
+	"time"
 )
 
-func WriteCSV(fileName string, header []string, data [][]string) error {
-	outputFile, err := os.Create(fileName + ".csv")
+func WriteCSV(fileName string, header []string, rows [][]string) error {
+	if len(rows) == 0 {
+		return fmt.Errorf("No rows to write to the CSV")
+	}
+
+	err := os.MkdirAll(outputDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	timestamp := time.Now().Unix()
+	filePath := filepath.Join(outputDir, fileName+"_"+strconv.FormatInt(timestamp, 10)+".csv")
+
+	outputFile, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
@@ -19,10 +35,10 @@ func WriteCSV(fileName string, header []string, data [][]string) error {
 		return err
 	}
 
-	for i := range data {
+	for i := range rows {
 		var csvRow []string
-		for j := range data[i] {
-			csvRow = append(csvRow, data[i][j])
+		for j := range rows[i] {
+			csvRow = append(csvRow, rows[i][j])
 		}
 		if err := writer.Write(csvRow); err != nil {
 			return err

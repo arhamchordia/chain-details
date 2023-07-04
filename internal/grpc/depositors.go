@@ -1,9 +1,10 @@
-package internal
+package grpc
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	grpctypes "github.com/arhamchordia/chain-details/types/grpc"
 	"os"
 	"strconv"
 	"strings"
@@ -13,10 +14,10 @@ import (
 	"github.com/tendermint/tendermint/rpc/client/http"
 )
 
-// ReplayChainBond returns a file with the bond events in all the blocks given as startingHeight and endHeight
-func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
+// QueryDepositorsBond returns a file with the bond events in all the blocks given as startingHeight and endHeight
+func QueryDepositorsBond(RPCAddress string, startingHeight, endHeight int64) error {
 	// create an rpcClient with the given RPCAddress
-	rpcClient, err := http.New(RPCAddress, types.Websocket)
+	rpcClient, err := http.New(RPCAddress, grpctypes.Websocket)
 	if err != nil {
 		return err
 	}
@@ -42,18 +43,18 @@ func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
 		for _, j := range blockResults.TxsResults {
 			var tempDepositorDetails []types.DepositorDetailsBond
 			var tempBondIDs []int64
-			if strings.Contains(string(j.Data), types.IdentifierMsgExecuteContract) {
+			if strings.Contains(string(j.Data), grpctypes.IdentifierMsgExecuteContract) {
 				for o, k := range j.Events {
-					if k.Type == types.Message && string(k.Attributes[0].Value) == types.IdentifierMsgExecuteContract {
+					if k.Type == grpctypes.Message && string(k.Attributes[0].Value) == grpctypes.IdentifierMsgExecuteContract {
 						if len(j.Events) >= o+3 {
-							if j.Events[o+1].Type == types.Message && string(j.Events[o+1].Attributes[0].Value) == types.Wasm {
-								if j.Events[o+2].Type == types.CoinSpent {
-									if j.Events[o+3].Type == types.CoinReceived && string(j.Events[o+3].Attributes[0].Value) == types.VaultAddress {
+							if j.Events[o+1].Type == grpctypes.Message && string(j.Events[o+1].Attributes[0].Value) == grpctypes.Wasm {
+								if j.Events[o+2].Type == grpctypes.CoinSpent {
+									if j.Events[o+3].Type == grpctypes.CoinReceived && string(j.Events[o+3].Attributes[0].Value) == grpctypes.VaultAddress {
 										tempDepositorDetails = append(tempDepositorDetails, types.DepositorDetailsBond{
 											Address:      string(j.Events[o+2].Attributes[0].Value),
 											Amount:       string(j.Events[o+2].Attributes[1].Value),
 											BlockHeight:  i,
-											VaultAddress: types.VaultAddress,
+											VaultAddress: grpctypes.VaultAddress,
 										})
 									}
 								}
@@ -65,7 +66,7 @@ func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
 				}
 
 				for _, q := range j.Events {
-					if q.Type == "wasm" && string(q.Attributes[0].Value) == types.VaultAddress && string(q.Attributes[1].Key) == "bond_id" {
+					if q.Type == grpctypes.Wasm && string(q.Attributes[0].Value) == grpctypes.VaultAddress && string(q.Attributes[1].Key) == grpctypes.BondID {
 						tempBondID, err := strconv.ParseInt(string(q.Attributes[1].Value), 10, 64)
 						if err != nil {
 							return fmt.Errorf("incorrect bond ID at height %d", i)
@@ -99,6 +100,7 @@ func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
 		return err
 	}
 
+	// TODO add prefix and rename
 	err = os.WriteFile("replay"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
@@ -107,10 +109,10 @@ func ReplayChainBond(RPCAddress string, startingHeight, endHeight int64) error {
 	return nil
 }
 
-// ReplayChainUnbond returns a file with the unbond events in all the blocks given as startingHeight and endHeight
-func ReplayChainUnbond(RPCAddress string, startingHeight, endHeight int64) error {
+// QueryDepositorsUnbond returns a file with the unbond events in all the blocks given as startingHeight and endHeight
+func QueryDepositorsUnbond(RPCAddress string, startingHeight, endHeight int64) error {
 	// create an rpcClient with the given RPCAddress
-	rpcClient, err := http.New(RPCAddress, types.Websocket)
+	rpcClient, err := http.New(RPCAddress, grpctypes.Websocket)
 	if err != nil {
 		return err
 	}
@@ -135,12 +137,11 @@ func ReplayChainUnbond(RPCAddress string, startingHeight, endHeight int64) error
 
 		// iterate all the block transaction results to match the field we are looking for
 		for _, j := range blockResults.TxsResults {
-			if strings.Contains(string(j.Data), types.IdentifierMsgExecuteContract) {
+			if strings.Contains(string(j.Data), grpctypes.IdentifierMsgExecuteContract) {
 				for _, k := range j.Events {
-					if k.Type == types.Wasm && len(k.Attributes) == 5 {
-						if string(k.Attributes[1].Key) == "action" && string(k.Attributes[1].Value) == "start_unbond" &&
-							string(k.Attributes[3].Key) == "burnt" {
-							unbondID, _ := strconv.ParseInt(string(k.Attributes[4].Value), 10, 64)
+					if k.Type == grpctypes.Wasm {
+						if len(k.Attributes) == 5 {
+							unbondID, err := strconv.ParseInt(string(k.Attributes[4].Value), 10, 64)
 							if err != nil {
 								return fmt.Errorf("incorrect unbond ID at height %d", i)
 							}
@@ -164,6 +165,8 @@ func ReplayChainUnbond(RPCAddress string, startingHeight, endHeight int64) error
 		return err
 	}
 
+	// TODO add prefix and rename
+
 	err = os.WriteFile("replay-unbond"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
@@ -172,10 +175,10 @@ func ReplayChainUnbond(RPCAddress string, startingHeight, endHeight int64) error
 	return nil
 }
 
-// CheckLockedTokens returns a file with the locked tokens events in all the blocks given as startingHeight and endHeight
-func CheckLockedTokens(RPCAddress string, startingHeight, endHeight int64) error {
+// QueryDepositorsLockedTokens returns a file with the locked tokens events in all the blocks given as startingHeight and endHeight
+func QueryDepositorsLockedTokens(RPCAddress string, startingHeight, endHeight int64) error {
 	// create an rpcClient with the given RPCAddress
-	rpcClient, err := http.New(RPCAddress, types.Websocket)
+	rpcClient, err := http.New(RPCAddress, grpctypes.Websocket)
 	if err != nil {
 		return err
 	}
@@ -200,10 +203,10 @@ func CheckLockedTokens(RPCAddress string, startingHeight, endHeight int64) error
 
 		// iterate all the block transaction results to match the field we are looking for
 		for _, j := range blockResults.TxsResults {
-			if strings.Contains(string(j.Data), types.IdentifierMsgUpdateClient) && strings.Contains(string(j.Data), types.IdentifierMsgAcknowledgement) {
+			if strings.Contains(string(j.Data), grpctypes.IdentifierMsgUpdateClient) && strings.Contains(string(j.Data), grpctypes.IdentifierMsgAcknowledgement) {
 				for _, k := range j.Events {
-					if k.Type == types.Wasm && len(k.Attributes) == 3 {
-						if string(k.Attributes[0].Key) == types.ContractAddress && string(k.Attributes[1].Key) == types.LockID && string(k.Attributes[2].Key) == types.LockedTokens {
+					if k.Type == grpctypes.Wasm && len(k.Attributes) == 3 {
+						if string(k.Attributes[0].Key) == grpctypes.ContractAddress && string(k.Attributes[1].Key) == grpctypes.LockID && string(k.Attributes[2].Key) == grpctypes.LockedTokens {
 							lockID, err := strconv.ParseInt(string(k.Attributes[1].Value), 10, 64)
 							if err != nil {
 								return fmt.Errorf("incorrect lock ID at height %d", i)
@@ -215,10 +218,10 @@ func CheckLockedTokens(RPCAddress string, startingHeight, endHeight int64) error
 							}
 						}
 					}
-					if k.Type == types.Wasm && len(k.Attributes) == 5 {
-						if string(k.Attributes[0].Key) == types.ContractAddress && string(k.Attributes[1].Key) == types.Action &&
-							string(k.Attributes[2].Key) == types.CallbackInfo && string(k.Attributes[3].Key) == types.ReplyMsgID &&
-							string(k.Attributes[4].Key) == types.ReplyResult {
+					if k.Type == grpctypes.Wasm && len(k.Attributes) == 5 {
+						if string(k.Attributes[0].Key) == grpctypes.ContractAddress && string(k.Attributes[1].Key) == grpctypes.Action &&
+							string(k.Attributes[2].Key) == grpctypes.CallbackInfo && string(k.Attributes[3].Key) == grpctypes.ReplyMsgID &&
+							string(k.Attributes[4].Key) == grpctypes.ReplyResult {
 							value, ok := tempContractDetailsMap[string(k.Attributes[0].Value)]
 							if ok {
 								value.Action = string(k.Attributes[1].Value)
@@ -252,6 +255,7 @@ func CheckLockedTokens(RPCAddress string, startingHeight, endHeight int64) error
 		return err
 	}
 
+	// TODO add prefix and rename
 	err = os.WriteFile("lock-details"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
@@ -260,10 +264,10 @@ func CheckLockedTokens(RPCAddress string, startingHeight, endHeight int64) error
 	return nil
 }
 
-// ParseMints returns a file with the mint tokens in incentive contract events in all the blocks given as startingHeight and endHeight
-func ParseMints(RPCAddress string, startingHeight, endHeight int64) error {
+// QueryDepositorsMints returns a file with the mint tokens in incentive contract events in all the blocks given as startingHeight and endHeight
+func QueryDepositorsMints(RPCAddress string, startingHeight, endHeight int64) error {
 	// create an rpcClient with the given RPCAddress
-	rpcClient, err := http.New(RPCAddress, types.Websocket)
+	rpcClient, err := http.New(RPCAddress, grpctypes.Websocket)
 	if err != nil {
 		return err
 	}
@@ -285,11 +289,11 @@ func ParseMints(RPCAddress string, startingHeight, endHeight int64) error {
 
 		// iterate all the block transaction results to match the field we are looking for
 		for _, j := range blockResults.TxsResults {
-			if strings.Contains(j.String(), types.VaultTokenBalance) {
+			if strings.Contains(j.String(), grpctypes.VaultTokenBalance) {
 				for _, k := range j.Events {
-					if k.Type == types.Wasm && len(k.Attributes) > 3 {
-						if string(k.Attributes[0].Key) == types.ContractAddress && string(k.Attributes[1].Key) == types.Action &&
-							string(k.Attributes[2].Key) == types.User && string(k.Attributes[3].Key) == types.VaultTokenBalance {
+					if k.Type == grpctypes.Wasm && len(k.Attributes) > 3 {
+						if string(k.Attributes[0].Key) == grpctypes.ContractAddress && string(k.Attributes[1].Key) == grpctypes.Action &&
+							string(k.Attributes[2].Key) == grpctypes.User && string(k.Attributes[3].Key) == grpctypes.VaultTokenBalance {
 							if len(k.Attributes) > 4 {
 								fmt.Println("found a block with multiple mints at height :", i)
 							}
@@ -317,6 +321,7 @@ func ParseMints(RPCAddress string, startingHeight, endHeight int64) error {
 		return err
 	}
 
+	// TODO add prefix and rename
 	err = os.WriteFile("minted-shares"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
@@ -325,10 +330,10 @@ func ParseMints(RPCAddress string, startingHeight, endHeight int64) error {
 	return nil
 }
 
-// CallBackInfos returns a file with the callback info of primitives events in all the blocks given as startingHeight and endHeight
-func CallBackInfos(RPCAddress string, startingHeight, endHeight int64) error {
+// QueryDepositorsCallbackInfo returns a file with the callback info of primitives events in all the blocks given as startingHeight and endHeight
+func QueryDepositorsCallbackInfo(RPCAddress string, startingHeight, endHeight int64) error {
 	// create an rpcClient with the given RPCAddress
-	rpcClient, err := http.New(RPCAddress, types.Websocket)
+	rpcClient, err := http.New(RPCAddress, grpctypes.Websocket)
 	if err != nil {
 		return err
 	}
@@ -354,12 +359,12 @@ func CallBackInfos(RPCAddress string, startingHeight, endHeight int64) error {
 
 		// iterate all the block transaction results to match the field we are looking for
 		for _, j := range blockResults.TxsResults {
-			if strings.Contains(j.String(), types.ReplyResult) && strings.Contains(j.String(), types.CallbackInfo) {
+			if strings.Contains(j.String(), grpctypes.ReplyResult) && strings.Contains(j.String(), grpctypes.CallbackInfo) {
 				for _, k := range j.Events {
-					if k.Type == types.Wasm && len(k.Attributes) == 5 {
-						if string(k.Attributes[0].Key) == types.ContractAddress && string(k.Attributes[1].Key) == types.Action &&
-							string(k.Attributes[2].Key) == types.CallbackInfo && string(k.Attributes[3].Key) == types.ReplyMsgID &&
-							string(k.Attributes[4].Key) == types.ReplyResult {
+					if k.Type == grpctypes.Wasm && len(k.Attributes) == 5 {
+						if string(k.Attributes[0].Key) == grpctypes.ContractAddress && string(k.Attributes[1].Key) == grpctypes.Action &&
+							string(k.Attributes[2].Key) == grpctypes.CallbackInfo && string(k.Attributes[3].Key) == grpctypes.ReplyMsgID &&
+							string(k.Attributes[4].Key) == grpctypes.ReplyResult {
 							tempCallBackInfos = append(tempCallBackInfos, types.CallBackInfo{
 								ContractAddress:    string(k.Attributes[0].Value),
 								Action:             string(k.Attributes[1].Value),
@@ -387,6 +392,7 @@ func CallBackInfos(RPCAddress string, startingHeight, endHeight int64) error {
 		return err
 	}
 
+	// TODO add prefix and rename
 	err = os.WriteFile("callback-infos"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
@@ -395,8 +401,8 @@ func CallBackInfos(RPCAddress string, startingHeight, endHeight int64) error {
 	return nil
 }
 
-func BeginUnlocking(RPCAddress string, startingHeight, endHeight int64) error {
-	rpcClient, err := http.New(RPCAddress, types.Websocket)
+func QueryDepositorsBeginUnlocking(RPCAddress string, startingHeight, endHeight int64) error {
+	rpcClient, err := http.New(RPCAddress, grpctypes.Websocket)
 	if err != nil {
 		return err
 	}
@@ -442,6 +448,7 @@ func BeginUnlocking(RPCAddress string, startingHeight, endHeight int64) error {
 		return err
 	}
 
+	// TODO add prefix and rename
 	err = os.WriteFile("begin-unlocking"+"-"+strconv.FormatInt(startingHeight, 10)+"-"+strconv.FormatInt(endHeight, 10)+".json", file, 0644)
 	if err != nil {
 		return err
@@ -450,9 +457,9 @@ func BeginUnlocking(RPCAddress string, startingHeight, endHeight int64) error {
 	return nil
 }
 
-func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
+func QueryDepositorsReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 	// create an rpcClient with the given RPCAddress
-	rpcClient, err := http.New(RPCAddress, types.Websocket)
+	rpcClient, err := http.New(RPCAddress, grpctypes.Websocket)
 	if err != nil {
 		return err
 	}
@@ -490,16 +497,16 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 
 			for o, k := range j.Events {
 				// bond filters
-				if k.Type == types.Message && string(k.Attributes[0].Value) == types.IdentifierMsgExecuteContract {
+				if k.Type == grpctypes.Message && string(k.Attributes[0].Value) == grpctypes.IdentifierMsgExecuteContract {
 					if len(j.Events) >= o+3 {
-						if j.Events[o+1].Type == types.Message && string(j.Events[o+1].Attributes[0].Value) == types.Wasm {
-							if j.Events[o+2].Type == types.CoinSpent {
-								if j.Events[o+3].Type == types.CoinReceived && string(j.Events[o+3].Attributes[0].Value) == types.VaultAddress {
+						if j.Events[o+1].Type == grpctypes.Message && string(j.Events[o+1].Attributes[0].Value) == grpctypes.Wasm {
+							if j.Events[o+2].Type == grpctypes.CoinSpent {
+								if j.Events[o+3].Type == grpctypes.CoinReceived && string(j.Events[o+3].Attributes[0].Value) == grpctypes.VaultAddress {
 									tempDepositorDetails = append(tempDepositorDetails, types.DepositorDetailsBond{
 										Address:      string(j.Events[o+2].Attributes[0].Value),
 										Amount:       string(j.Events[o+2].Attributes[1].Value),
 										BlockHeight:  i,
-										VaultAddress: types.VaultAddress,
+										VaultAddress: grpctypes.VaultAddress,
 									})
 								}
 							}
@@ -510,7 +517,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 				}
 
 				// unbond filters
-				if k.Type == types.Wasm && len(k.Attributes) == 5 {
+				if k.Type == grpctypes.Wasm && len(k.Attributes) == 5 {
 					if string(k.Attributes[1].Key) == "action" && string(k.Attributes[1].Value) == "start_unbond" &&
 						string(k.Attributes[3].Key) == "burnt" {
 						unbondID, _ := strconv.ParseInt(string(k.Attributes[4].Value), 10, 64)
@@ -528,9 +535,9 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 				}
 
 				// lock tokens
-				if strings.Contains(string(j.Data), types.IdentifierMsgUpdateClient) && strings.Contains(string(j.Data), types.IdentifierMsgAcknowledgement) {
-					if k.Type == types.Wasm && len(k.Attributes) == 3 {
-						if string(k.Attributes[0].Key) == types.ContractAddress && string(k.Attributes[1].Key) == types.LockID && string(k.Attributes[2].Key) == types.LockedTokens {
+				if strings.Contains(string(j.Data), grpctypes.IdentifierMsgUpdateClient) && strings.Contains(string(j.Data), grpctypes.IdentifierMsgAcknowledgement) {
+					if k.Type == grpctypes.Wasm && len(k.Attributes) == 3 {
+						if string(k.Attributes[0].Key) == grpctypes.ContractAddress && string(k.Attributes[1].Key) == grpctypes.LockID && string(k.Attributes[2].Key) == grpctypes.LockedTokens {
 							lockID, err := strconv.ParseInt(string(k.Attributes[1].Value), 10, 64)
 							if err != nil {
 								return fmt.Errorf("incorrect lock ID at height %d", i)
@@ -542,10 +549,10 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 							}
 						}
 					}
-					if k.Type == types.Wasm && len(k.Attributes) == 5 {
-						if string(k.Attributes[0].Key) == types.ContractAddress && string(k.Attributes[1].Key) == types.Action &&
-							string(k.Attributes[2].Key) == types.CallbackInfo && string(k.Attributes[3].Key) == types.ReplyMsgID &&
-							string(k.Attributes[4].Key) == types.ReplyResult {
+					if k.Type == grpctypes.Wasm && len(k.Attributes) == 5 {
+						if string(k.Attributes[0].Key) == grpctypes.ContractAddress && string(k.Attributes[1].Key) == grpctypes.Action &&
+							string(k.Attributes[2].Key) == grpctypes.CallbackInfo && string(k.Attributes[3].Key) == grpctypes.ReplyMsgID &&
+							string(k.Attributes[4].Key) == grpctypes.ReplyResult {
 							value, ok := tempContractDetailsMap[string(k.Attributes[0].Value)]
 							if ok {
 								value.Action = string(k.Attributes[1].Value)
@@ -561,10 +568,10 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 				}
 
 				// parse mints
-				if strings.Contains(j.String(), types.VaultTokenBalance) {
-					if k.Type == types.Wasm && len(k.Attributes) > 3 {
-						if string(k.Attributes[0].Key) == types.ContractAddress && string(k.Attributes[1].Key) == types.Action &&
-							string(k.Attributes[2].Key) == types.User && string(k.Attributes[3].Key) == types.VaultTokenBalance {
+				if strings.Contains(j.String(), grpctypes.VaultTokenBalance) {
+					if k.Type == grpctypes.Wasm && len(k.Attributes) > 3 {
+						if string(k.Attributes[0].Key) == grpctypes.ContractAddress && string(k.Attributes[1].Key) == grpctypes.Action &&
+							string(k.Attributes[2].Key) == grpctypes.User && string(k.Attributes[3].Key) == grpctypes.VaultTokenBalance {
 							if len(k.Attributes) > 4 {
 								fmt.Println("found a block with multiple mints at height :", i)
 							}
@@ -584,11 +591,11 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 				}
 
 				// callback infos
-				if strings.Contains(j.String(), types.ReplyResult) && strings.Contains(j.String(), types.CallbackInfo) {
-					if k.Type == types.Wasm && len(k.Attributes) == 5 {
-						if string(k.Attributes[0].Key) == types.ContractAddress && string(k.Attributes[1].Key) == types.Action &&
-							string(k.Attributes[2].Key) == types.CallbackInfo && string(k.Attributes[3].Key) == types.ReplyMsgID &&
-							string(k.Attributes[4].Key) == types.ReplyResult {
+				if strings.Contains(j.String(), grpctypes.ReplyResult) && strings.Contains(j.String(), grpctypes.CallbackInfo) {
+					if k.Type == grpctypes.Wasm && len(k.Attributes) == 5 {
+						if string(k.Attributes[0].Key) == grpctypes.ContractAddress && string(k.Attributes[1].Key) == grpctypes.Action &&
+							string(k.Attributes[2].Key) == grpctypes.CallbackInfo && string(k.Attributes[3].Key) == grpctypes.ReplyMsgID &&
+							string(k.Attributes[4].Key) == grpctypes.ReplyResult {
 							tempCallBackInfos = append(tempCallBackInfos, types.CallBackInfo{
 								ContractAddress:    string(k.Attributes[0].Value),
 								Action:             string(k.Attributes[1].Value),
@@ -614,7 +621,7 @@ func ReplayChain(RPCAddress string, startingHeight, endHeight int64) error {
 			}
 
 			for _, q := range j.Events {
-				if q.Type == "wasm" && string(q.Attributes[0].Value) == types.VaultAddress && string(q.Attributes[1].Key) == "bond_id" {
+				if q.Type == "wasm" && string(q.Attributes[0].Value) == grpctypes.VaultAddress && string(q.Attributes[1].Key) == "bond_id" {
 					tempBondID, err := strconv.ParseInt(string(q.Attributes[1].Value), 10, 64)
 					if err != nil {
 						return fmt.Errorf("incorrect bond ID at height %d", i)

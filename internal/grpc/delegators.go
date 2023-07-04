@@ -1,8 +1,13 @@
-package internal
+package grpc
 
 import (
 	"context"
+	"crypto/tls"
+	"github.com/arhamchordia/chain-details/internal"
+	"google.golang.org/grpc/credentials"
+	"time"
 
+	grpctypes "github.com/arhamchordia/chain-details/types/grpc"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -10,6 +15,42 @@ import (
 
 	"github.com/arhamchordia/chain-details/types"
 )
+
+func QueryDelegatorsData(grpcUrl string) error {
+	// initialise config for grpc connection
+	config := &tls.Config{
+		InsecureSkipVerify: false,
+	}
+
+	// Create a connection to the gRPC server.
+	grpcConn, err := grpc.Dial(
+		grpcUrl,
+		grpc.WithTransportCredentials(credentials.NewTLS(config)),
+	)
+	if err != nil {
+		return err
+	}
+	defer grpcConn.Close()
+
+	// send a query only when connection state is ready
+	for {
+		// wait for 4 milliseconds for grpc to connect
+		time.Sleep(4 * time.Millisecond)
+
+		// trigger action on the basis of state of the connection
+		if grpcConn.GetState().String() == "READY" {
+			err = ParseDelegators(grpcConn)
+			if err != nil {
+				return err
+			}
+			break
+		} else if grpcConn.GetState().String() == "TRANSIENT_FAILURE" {
+			break
+		}
+	}
+
+	return nil
+}
 
 // ParseDelegators parses all the requested information
 // returns an error if any of the steps fail
@@ -21,7 +62,7 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 	stakingResponse, err := stakingClient.Validators(
 		context.Background(),
 		&stakingtypes.QueryValidatorsRequest{
-			Pagination: &query.PageRequest{Limit: types.ValidatorsLimit},
+			Pagination: &query.PageRequest{Limit: grpctypes.ValidatorsLimit},
 		})
 	if err != nil {
 		return err
@@ -40,7 +81,7 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 			context.Background(),
 			&stakingtypes.QueryValidatorDelegationsRequest{
 				ValidatorAddr: val.OperatorAddress,
-				Pagination:    &query.PageRequest{Limit: types.DelegatorsLimit},
+				Pagination:    &query.PageRequest{Limit: grpctypes.DelegatorsLimit},
 			},
 		)
 		if err != nil {
@@ -83,12 +124,12 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 		}
 	}
 
-	err = WriteCSV(
-		types.DelegatorDelegationEntriesFileName,
+	err = internal.WriteCSV(
+		grpctypes.PrefixGRPC+grpctypes.DelegatorDelegationEntriesFileName,
 		[]string{
-			types.HeaderDelegator,
-			types.HeaderValidator,
-			types.HeaderShares,
+			grpctypes.HeaderDelegator,
+			grpctypes.HeaderValidator,
+			grpctypes.HeaderShares,
 		},
 		delegatorDelegationEntries,
 	)
@@ -101,11 +142,11 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 		delegatorShares = append(delegatorShares, []string{key, value.String()})
 	}
 
-	err = WriteCSV(
-		types.DelegatorSharesFileName,
+	err = internal.WriteCSV(
+		grpctypes.PrefixGRPC+grpctypes.DelegatorSharesFileName,
 		[]string{
-			types.HeaderDelegator,
-			types.HeaderShares,
+			grpctypes.HeaderDelegator,
+			grpctypes.HeaderShares,
 		},
 		delegatorShares,
 	)

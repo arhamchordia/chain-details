@@ -3,14 +3,18 @@ package grpc
 import (
 	"context"
 	"crypto/tls"
-	"github.com/arhamchordia/chain-details/internal"
-	grpctypes "github.com/arhamchordia/chain-details/types/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"strconv"
 	"time"
 
+	"github.com/arhamchordia/chain-details/internal"
+	grpctypes "github.com/arhamchordia/chain-details/types/grpc"
+	cryptotypes1 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/cosmos/cosmos-sdk/types/query"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/arhamchordia/chain-details/types"
@@ -127,7 +131,7 @@ func GetSelfDelegations(stakingClient stakingtypes.QueryClient, validators types
 	// iterate through all the validator address and find self delegations
 	for _, val := range validators {
 		// find account address of the given validator address
-		accAddress, err := types.GetAccAddress(val.OperatorAddress, accountPrefix)
+		accAddress, err := types.GetAccAddressFromValAdderss(val.OperatorAddress, accountPrefix)
 		if err != nil {
 			return nil, err
 		}
@@ -148,4 +152,156 @@ func GetSelfDelegations(stakingClient stakingtypes.QueryClient, validators types
 	}
 
 	return selfDelegations, nil
+}
+
+func ParseGenesisPostGenesisValidatorsData(grpcUrl string) error {
+	// initialise config for grpc connection
+	config := &tls.Config{
+		InsecureSkipVerify: false,
+	}
+
+	// Create a connection to the gRPC server.
+	grpcConn, err := grpc.Dial(
+		grpcUrl,
+		grpc.WithTransportCredentials(credentials.NewTLS(config)),
+	)
+	if err != nil {
+		return err
+	}
+	defer grpcConn.Close()
+
+	// send a query only when connection state is ready
+	for {
+		// wait for 4 milliseconds for grpc to connect
+		time.Sleep(4 * time.Millisecond)
+
+		if grpcConn.GetState().String() == "READY" {
+			err = ParseGenesisAndPostGenesisValidators(grpcConn)
+			if err != nil {
+				return err
+			}
+			break
+		} else if grpcConn.GetState().String() == "TRANSIENT_FAILURE" {
+			break
+		}
+	}
+
+	return nil
+}
+
+func ParseGenesisAndPostGenesisValidators(grpcConn *grpc.ClientConn) error {
+	// create a staking client in order to query validators list
+	stakingClient := stakingtypes.NewQueryClient(grpcConn)
+
+	// query the validators list using stakingClient
+	stakingResponse, err := stakingClient.Validators(
+		context.Background(),
+		&stakingtypes.QueryValidatorsRequest{
+			Pagination: &query.PageRequest{
+				Limit: grpctypes.ValidatorsLimit,
+			},
+		})
+	if err != nil {
+		return err
+	}
+
+	slashingClient := slashingtypes.NewQueryClient(grpcConn)
+
+	var genesisValidators []stakingtypes.Validator
+	var postGenesisValidators []stakingtypes.Validator
+	for _, val := range stakingResponse.Validators {
+		validator, err := stakingClient.Validator(context.Background(), &stakingtypes.QueryValidatorRequest{ValidatorAddr: val.OperatorAddress})
+		if err != nil {
+			return err
+		}
+
+		var pubKey cryptotypes1.PubKey
+		err = pubKey.Unmarshal(validator.Validator.ConsensusPubkey.Value)
+		if err != nil {
+			return err
+		}
+
+		accAddress := sdk.AccAddress(pubKey.Address())
+		bech32Addr, err := bech32.ConvertAndEncode("quasarvalcons", accAddress)
+		if err != nil {
+			return err
+		}
+
+		info, err := slashingClient.SigningInfo(context.Background(), &slashingtypes.QuerySigningInfoRequest{ConsAddress: bech32Addr})
+		if err != nil {
+			return err
+		}
+
+		if info.ValSigningInfo.StartHeight != 0 {
+			postGenesisValidators = append(postGenesisValidators, validator.Validator)
+		} else {
+			genesisValidators = append(genesisValidators, validator.Validator)
+		}
+	}
+
+	// generate a 2d string array for populating csv files.
+	var data [][]string
+	for _, i := range genesisValidators {
+		var temp []string
+		temp = append(
+			temp,
+			"genesis",
+			i.OperatorAddress,
+			i.ConsensusPubkey.String(),
+			strconv.FormatBool(i.Jailed),
+			i.Status.String(),
+			i.Tokens.String(),
+			i.DelegatorShares.String(),
+			i.Description.String(),
+			strconv.FormatInt(i.UnbondingHeight, 10),
+			i.UnbondingTime.String(),
+			i.Commission.String(),
+			i.MinSelfDelegation.String(),
+		)
+		data = append(data, temp)
+	}
+
+	for _, i := range postGenesisValidators {
+		var temp []string
+		temp = append(
+			temp,
+			"post-genesis",
+			i.OperatorAddress,
+			i.ConsensusPubkey.String(),
+			strconv.FormatBool(i.Jailed),
+			i.Status.String(),
+			i.Tokens.String(),
+			i.DelegatorShares.String(),
+			i.Description.String(),
+			strconv.FormatInt(i.UnbondingHeight, 10),
+			i.UnbondingTime.String(),
+			i.Commission.String(),
+			i.MinSelfDelegation.String(),
+		)
+		data = append(data, temp)
+	}
+
+	err = internal.WriteCSV(
+		grpctypes.PrefixGRPC+grpctypes.GenesisPostGenesisValidators,
+		[]string{
+			grpctypes.HeaderGenesisType,
+			grpctypes.HeaderOperatorAddress,
+			grpctypes.HeaderConsensusPubkey,
+			grpctypes.HeaderJailed,
+			grpctypes.HeaderStatus,
+			grpctypes.HeaderTokens,
+			grpctypes.HeaderDelegatorShares,
+			grpctypes.HeaderDescription,
+			grpctypes.HeaderUnbondingHeight,
+			grpctypes.HeaderUnbondingTime,
+			grpctypes.HeaderCommission,
+			grpctypes.HeaderMinSelfDelegation,
+		},
+		data,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

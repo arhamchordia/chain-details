@@ -7,6 +7,7 @@ const (
 	DelegatorDelegationEntriesFileName = "delegator_delegation_entries"
 	DelegatorSharesFileName            = "delegator_shares"
 	GenesisAccountAnalysisFileName     = "genesis_accounts"
+	GenesisPostGenesisValidators       = "genesis_post_genesis_validators"
 
 	HeaderMoniker              = "Moniker"
 	HeaderPercentageWeight     = "Percentage Weight"
@@ -21,6 +22,19 @@ const (
 	HeaderVestingStartTime     = "Vesting Start Time"
 	HeaderTokensFreeEveryBlock = "Tokens Free Every Block"
 	HeaderTokensFreeEveryDay   = "Tokens Free Every Day"
+
+	HeaderGenesisType       = "Genesis Type"
+	HeaderOperatorAddress   = "Operator Address"
+	HeaderConsensusPubkey   = "Consensus Pubkey"
+	HeaderStatus            = "Status"
+	HeaderTokens            = "Tokens"
+	HeaderDelegatorShares   = "Delegator Shares"
+	HeaderDescription       = "Description"
+	HeaderUnbondingHeight   = "Unbonding Height"
+	HeaderUnbondingTime     = "Unbonding Time"
+	HeaderCommission        = "Commission"
+	HeaderMinSelfDelegation = "Min Self Delegation"
+	HeaderJailed            = "Jailed"
 
 	Message           = "message"
 	Wasm              = "wasm"

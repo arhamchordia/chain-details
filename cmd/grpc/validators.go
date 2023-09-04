@@ -20,3 +20,18 @@ var ValidatorsDataCmd = &cobra.Command{
 		return nil
 	},
 }
+
+var GenesisAndPostGenesisValidatorsDataCmd = &cobra.Command{
+	Use:   "genesis-post-genesis-validators [grpc-url]",
+	Short: "Generates csv file with validators data",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		grpcUrl := args[0]
+
+		err := grpc.ParseGenesisPostGenesisValidatorsData(grpcUrl)
+		if err != nil {
+			return err
+		}
+		return nil
+	},
+}

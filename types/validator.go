@@ -2,10 +2,9 @@ package types
 
 import (
 	"encoding/hex"
-	"sort"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"sort"
 )
 
 type Validators []stakingtypes.Validator
@@ -75,7 +74,7 @@ func ConvertToInternalValidators(validatorList stakingtypes.Validators) Validato
 	return validators
 }
 
-func GetAccAddress(address, accountPrefix string) (string, error) {
+func GetAccAddressFromValAdderss(address, accountPrefix string) (string, error) {
 	valAddressPrefix := accountPrefix + "valoper"
 	valAddress, err := ValAddressFromBech32(address, valAddressPrefix)
 	if err != nil {

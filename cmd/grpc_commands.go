@@ -25,4 +25,5 @@ func GRPCRegisterGenesisCmd(parentCmd *cobra.Command) {
 
 func GRPCRegisterValidatorsCmd(parentCmd *cobra.Command) {
 	parentCmd.AddCommand(grpc.ValidatorsDataCmd)
+	parentCmd.AddCommand(grpc.GenesisAndPostGenesisValidatorsDataCmd)
 }

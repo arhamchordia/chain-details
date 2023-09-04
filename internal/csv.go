@@ -37,9 +37,7 @@ func WriteCSV(fileName string, header []string, rows [][]string) error {
 
 	for i := range rows {
 		var csvRow []string
-		for j := range rows[i] {
-			csvRow = append(csvRow, rows[i][j])
-		}
+		csvRow = append(csvRow, rows[i]...)
 		if err := writer.Write(csvRow); err != nil {
 			return err
 		}

@@ -137,6 +137,12 @@ and percentage voting power.
 go run main.go grpc validators-data [grpc-url] [account-address-prefix]
 ```
 
+`grpc genesis-post-genesis-validators` : Generates a CSV file containing separated validators based on the time of inception. From genesis or post genesis.
+
+```bash
+go run main.go grpc genesis-post-genesis-validators [grpc-url]
+```
+
 ### BigQuery
 
 (--flags) are optionals

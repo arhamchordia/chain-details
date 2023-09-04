@@ -8,6 +8,7 @@ const (
 	DelegatorSharesFileName            = "delegator_shares"
 	GenesisAccountAnalysisFileName     = "genesis_accounts"
 	GenesisPostGenesisValidators       = "genesis_post_genesis_validators"
+	DelegationAnalysis                 = "delegation_analysis"
 
 	HeaderMoniker              = "Moniker"
 	HeaderPercentageWeight     = "Percentage Weight"

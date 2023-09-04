@@ -7,6 +7,7 @@ import (
 
 func GRPCRegisterDelegatorsCmd(parentCmd *cobra.Command) {
 	parentCmd.AddCommand(grpc.DelegatorsDataCmd)
+	parentCmd.AddCommand(grpc.DelegationsAnalysisCmd)
 }
 
 func GRPCRegisterDepositorsCmd(parentCmd *cobra.Command) {

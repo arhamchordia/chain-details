@@ -74,6 +74,12 @@ every delegator on the chain.
 go run main.go grpc delegators-data [grpc-url]
 ```
 
+`delegation-analysis`: Generates a CSV for the given account that contains the delegations analysis data for the account for the given chain.
+
+```bash
+go run main.go grpc delegation-analysis [grpc-url] [address] [denom]
+```
+
 #### Depositors
 
 `grpc depositors-bond`: Generates a file with the details of all deposits made to the validators from a given height to

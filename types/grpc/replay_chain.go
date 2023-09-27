@@ -1,4 +1,4 @@
-package types
+package grpc
 
 type DepositorDetailsBond struct {
 	Address      string `json:"address"`

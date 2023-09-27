@@ -16,8 +16,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	"github.com/arhamchordia/chain-details/types"
 )
 
 func QueryValidatorsData(grpcUrl, accountPrefix string) error {
@@ -74,7 +72,7 @@ func ParseValidators(grpcConn *grpc.ClientConn, accountPrefix string) error {
 	}
 
 	// convert response to internal validators for sorting
-	validators := types.ConvertToInternalValidators(stakingResponse.Validators)
+	validators := grpctypes.ConvertToInternalValidators(stakingResponse.Validators)
 	validators.SortStable()
 
 	// list of validator names
@@ -125,13 +123,13 @@ func ParseValidators(grpcConn *grpc.ClientConn, accountPrefix string) error {
 
 // GetSelfDelegations returns a list of coin and error after querying self delegations of the
 // validators provided in the input.
-func GetSelfDelegations(stakingClient stakingtypes.QueryClient, validators types.Validators, accountPrefix string) ([]sdk.Coin, error) {
+func GetSelfDelegations(stakingClient stakingtypes.QueryClient, validators grpctypes.Validators, accountPrefix string) ([]sdk.Coin, error) {
 	var selfDelegations []sdk.Coin
 
 	// iterate through all the validator address and find self delegations
 	for _, val := range validators {
 		// find account address of the given validator address
-		accAddress, err := types.GetAccAddressFromValAdderss(val.OperatorAddress, accountPrefix)
+		accAddress, err := grpctypes.GetAccAddressFromValAdderss(val.OperatorAddress, accountPrefix)
 		if err != nil {
 			return nil, err
 		}

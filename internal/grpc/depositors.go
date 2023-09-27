@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/arhamchordia/chain-details/types"
 	"github.com/tendermint/tendermint/rpc/client/http"
 )
 
@@ -22,7 +21,7 @@ func QueryDepositorsBond(RPCAddress string, startingHeight, endHeight int64) err
 		return err
 	}
 
-	var depositorDetails []types.DepositorDetailsBond
+	var depositorDetails []grpctypes.DepositorDetailsBond
 	for i := startingHeight; i <= endHeight; i++ {
 		if i%1000 == 0 {
 			fmt.Println(i)
@@ -41,7 +40,7 @@ func QueryDepositorsBond(RPCAddress string, startingHeight, endHeight int64) err
 
 		// iterate all the block transaction results to match the field we are looking for
 		for _, j := range blockResults.TxsResults {
-			var tempDepositorDetails []types.DepositorDetailsBond
+			var tempDepositorDetails []grpctypes.DepositorDetailsBond
 			var tempBondIDs []int64
 			if strings.Contains(string(j.Data), grpctypes.IdentifierMsgExecuteContract) {
 				for o, k := range j.Events {
@@ -50,7 +49,7 @@ func QueryDepositorsBond(RPCAddress string, startingHeight, endHeight int64) err
 							if j.Events[o+1].Type == grpctypes.Message && string(j.Events[o+1].Attributes[0].Value) == grpctypes.Wasm {
 								if j.Events[o+2].Type == grpctypes.CoinSpent {
 									if j.Events[o+3].Type == grpctypes.CoinReceived && string(j.Events[o+3].Attributes[0].Value) == grpctypes.VaultAddress {
-										tempDepositorDetails = append(tempDepositorDetails, types.DepositorDetailsBond{
+										tempDepositorDetails = append(tempDepositorDetails, grpctypes.DepositorDetailsBond{
 											Address:      string(j.Events[o+2].Attributes[0].Value),
 											Amount:       string(j.Events[o+2].Attributes[1].Value),
 											BlockHeight:  i,
@@ -82,7 +81,7 @@ func QueryDepositorsBond(RPCAddress string, startingHeight, endHeight int64) err
 				}
 
 				for p := range tempBondIDs {
-					depositorDetails = append(depositorDetails, types.DepositorDetailsBond{
+					depositorDetails = append(depositorDetails, grpctypes.DepositorDetailsBond{
 						Address:      tempDepositorDetails[p].Address,
 						Amount:       tempDepositorDetails[p].Amount,
 						BlockHeight:  tempDepositorDetails[p].BlockHeight,
@@ -117,7 +116,7 @@ func QueryDepositorsUnbond(RPCAddress string, startingHeight, endHeight int64) e
 		return err
 	}
 
-	var depositorDetailsUnbond []types.DepositorDetailsUnbond
+	var depositorDetailsUnbond []grpctypes.DepositorDetailsUnbond
 
 	for i := startingHeight; i <= endHeight; i++ {
 		if i%1000 == 0 {
@@ -145,7 +144,7 @@ func QueryDepositorsUnbond(RPCAddress string, startingHeight, endHeight int64) e
 							if err != nil {
 								return fmt.Errorf("incorrect unbond ID at height %d", i)
 							}
-							depositorDetailsUnbond = append(depositorDetailsUnbond, types.DepositorDetailsUnbond{
+							depositorDetailsUnbond = append(depositorDetailsUnbond, grpctypes.DepositorDetailsUnbond{
 								Address:      string(k.Attributes[2].Value),
 								BlockHeight:  i,
 								BurntShares:  string(k.Attributes[3].Value),
@@ -183,7 +182,7 @@ func QueryDepositorsLockedTokens(RPCAddress string, startingHeight, endHeight in
 		return err
 	}
 
-	var lockDetailsByHeight []types.LockDetailsByHeight
+	var lockDetailsByHeight []grpctypes.LockDetailsByHeight
 
 	for i := startingHeight; i <= endHeight; i++ {
 		time.Sleep(time.Millisecond * 50)
@@ -198,8 +197,8 @@ func QueryDepositorsLockedTokens(RPCAddress string, startingHeight, endHeight in
 			return fmt.Errorf("cannot read height %d", i)
 		}
 
-		tempContractDetailsMap := make(map[string]types.ContractDetails)
-		var tempContractDetails []types.ContractDetails
+		tempContractDetailsMap := make(map[string]grpctypes.ContractDetails)
+		var tempContractDetails []grpctypes.ContractDetails
 
 		// iterate all the block transaction results to match the field we are looking for
 		for _, j := range blockResults.TxsResults {
@@ -211,7 +210,7 @@ func QueryDepositorsLockedTokens(RPCAddress string, startingHeight, endHeight in
 							if err != nil {
 								return fmt.Errorf("incorrect lock ID at height %d", i)
 							}
-							tempContractDetailsMap[string(k.Attributes[0].Value)] = types.ContractDetails{
+							tempContractDetailsMap[string(k.Attributes[0].Value)] = grpctypes.ContractDetails{
 								Address:                 string(k.Attributes[0].Value),
 								LockID:                  lockID,
 								LockedTokensProtoString: string(k.Attributes[2].Value),
@@ -242,7 +241,7 @@ func QueryDepositorsLockedTokens(RPCAddress string, startingHeight, endHeight in
 			for _, value := range tempContractDetailsMap {
 				tempContractDetails = append(tempContractDetails, value)
 			}
-			lockDetailsByHeight = append(lockDetailsByHeight, types.LockDetailsByHeight{
+			lockDetailsByHeight = append(lockDetailsByHeight, grpctypes.LockDetailsByHeight{
 				Height:          i,
 				ContractDetails: tempContractDetails,
 			})
@@ -272,7 +271,7 @@ func QueryDepositorsMints(RPCAddress string, startingHeight, endHeight int64) er
 		return err
 	}
 
-	addressToSharesMap := make(map[string]types.AddressSharesInIncentiveContract)
+	addressToSharesMap := make(map[string]grpctypes.AddressSharesInIncentiveContract)
 
 	for i := startingHeight; i <= endHeight; i++ {
 		time.Sleep(time.Millisecond * 50)
@@ -303,7 +302,7 @@ func QueryDepositorsMints(RPCAddress string, startingHeight, endHeight int64) er
 								value.LastUpdatedHeight = append(value.LastUpdatedHeight, i)
 								addressToSharesMap[string(k.Attributes[2].Value)] = value
 							} else {
-								addressToSharesMap[string(k.Attributes[2].Value)] = types.AddressSharesInIncentiveContract{
+								addressToSharesMap[string(k.Attributes[2].Value)] = grpctypes.AddressSharesInIncentiveContract{
 									Shares:            []string{string(k.Attributes[3].Value)},
 									LastUpdatedHeight: []int64{i},
 								}
@@ -338,7 +337,7 @@ func QueryDepositorsCallbackInfo(RPCAddress string, startingHeight, endHeight in
 		return err
 	}
 
-	var callBackInfoWithHeight []types.CallBackInfoWithHeight
+	var callBackInfoWithHeight []grpctypes.CallBackInfoWithHeight
 	for i := startingHeight; i <= endHeight; i++ {
 		if i%1000 == 0 {
 			fmt.Println(i)
@@ -355,7 +354,7 @@ func QueryDepositorsCallbackInfo(RPCAddress string, startingHeight, endHeight in
 			return fmt.Errorf("cannot read height %d", i)
 		}
 
-		var tempCallBackInfos []types.CallBackInfo
+		var tempCallBackInfos []grpctypes.CallBackInfo
 
 		// iterate all the block transaction results to match the field we are looking for
 		for _, j := range blockResults.TxsResults {
@@ -365,7 +364,7 @@ func QueryDepositorsCallbackInfo(RPCAddress string, startingHeight, endHeight in
 						if string(k.Attributes[0].Key) == grpctypes.ContractAddress && string(k.Attributes[1].Key) == grpctypes.Action &&
 							string(k.Attributes[2].Key) == grpctypes.CallbackInfo && string(k.Attributes[3].Key) == grpctypes.ReplyMsgID &&
 							string(k.Attributes[4].Key) == grpctypes.ReplyResult {
-							tempCallBackInfos = append(tempCallBackInfos, types.CallBackInfo{
+							tempCallBackInfos = append(tempCallBackInfos, grpctypes.CallBackInfo{
 								ContractAddress:    string(k.Attributes[0].Value),
 								Action:             string(k.Attributes[1].Value),
 								CallBackInfoString: string(k.Attributes[2].Value),
@@ -379,7 +378,7 @@ func QueryDepositorsCallbackInfo(RPCAddress string, startingHeight, endHeight in
 		}
 
 		if len(tempCallBackInfos) > 0 {
-			callBackInfoWithHeight = append(callBackInfoWithHeight, types.CallBackInfoWithHeight{
+			callBackInfoWithHeight = append(callBackInfoWithHeight, grpctypes.CallBackInfoWithHeight{
 				Height:        i,
 				CallBackInfos: tempCallBackInfos,
 			})
@@ -407,7 +406,7 @@ func QueryDepositorsBeginUnlocking(RPCAddress string, startingHeight, endHeight 
 		return err
 	}
 
-	var BeginUnlocking []types.BeginUnlocking
+	var BeginUnlocking []grpctypes.BeginUnlocking
 	for i := startingHeight; i <= endHeight; i++ {
 		if i%1000 == 0 {
 			fmt.Println(i)
@@ -429,7 +428,7 @@ func QueryDepositorsBeginUnlocking(RPCAddress string, startingHeight, endHeight 
 			for _, k := range j.Events {
 				if k.Type == "wasm" && len(k.Attributes) == 3 {
 					if string(k.Attributes[2].Key) == "step" && strings.Contains(string(k.Attributes[2].Value), "BeginUnlocking") {
-						BeginUnlocking = append(BeginUnlocking, types.BeginUnlocking{
+						BeginUnlocking = append(BeginUnlocking, grpctypes.BeginUnlocking{
 							Height:          i,
 							Step:            string(k.Attributes[2].Value),
 							ContractAddress: string(k.Attributes[0].Value),
@@ -464,12 +463,12 @@ func QueryDepositorsReplayChain(RPCAddress string, startingHeight, endHeight int
 		return err
 	}
 
-	var depositorDetails []types.DepositorDetailsBond
-	var depositorDetailsUnbond []types.DepositorDetailsUnbond
-	var lockDetailsByHeight []types.LockDetailsByHeight
-	addressToSharesMap := make(map[string]types.AddressSharesInIncentiveContract)
-	var callBackInfoWithHeight []types.CallBackInfoWithHeight
-	var beginUnlocking []types.BeginUnlocking
+	var depositorDetails []grpctypes.DepositorDetailsBond
+	var depositorDetailsUnbond []grpctypes.DepositorDetailsUnbond
+	var lockDetailsByHeight []grpctypes.LockDetailsByHeight
+	addressToSharesMap := make(map[string]grpctypes.AddressSharesInIncentiveContract)
+	var callBackInfoWithHeight []grpctypes.CallBackInfoWithHeight
+	var beginUnlocking []grpctypes.BeginUnlocking
 
 	for i := startingHeight; i <= endHeight; i++ {
 		if i%1000 == 0 {
@@ -489,11 +488,11 @@ func QueryDepositorsReplayChain(RPCAddress string, startingHeight, endHeight int
 
 		// filter bonds, unbonds etc
 		for _, j := range blockResults.TxsResults {
-			var tempDepositorDetails []types.DepositorDetailsBond
+			var tempDepositorDetails []grpctypes.DepositorDetailsBond
 			var tempBondIDs []int64
-			tempContractDetailsMap := make(map[string]types.ContractDetails)
-			var tempContractDetails []types.ContractDetails
-			var tempCallBackInfos []types.CallBackInfo
+			tempContractDetailsMap := make(map[string]grpctypes.ContractDetails)
+			var tempContractDetails []grpctypes.ContractDetails
+			var tempCallBackInfos []grpctypes.CallBackInfo
 
 			for o, k := range j.Events {
 				// bond filters
@@ -502,7 +501,7 @@ func QueryDepositorsReplayChain(RPCAddress string, startingHeight, endHeight int
 						if j.Events[o+1].Type == grpctypes.Message && string(j.Events[o+1].Attributes[0].Value) == grpctypes.Wasm {
 							if j.Events[o+2].Type == grpctypes.CoinSpent {
 								if j.Events[o+3].Type == grpctypes.CoinReceived && string(j.Events[o+3].Attributes[0].Value) == grpctypes.VaultAddress {
-									tempDepositorDetails = append(tempDepositorDetails, types.DepositorDetailsBond{
+									tempDepositorDetails = append(tempDepositorDetails, grpctypes.DepositorDetailsBond{
 										Address:      string(j.Events[o+2].Attributes[0].Value),
 										Amount:       string(j.Events[o+2].Attributes[1].Value),
 										BlockHeight:  i,
@@ -524,7 +523,7 @@ func QueryDepositorsReplayChain(RPCAddress string, startingHeight, endHeight int
 						if err != nil {
 							return fmt.Errorf("incorrect unbond ID at height %d", i)
 						}
-						depositorDetailsUnbond = append(depositorDetailsUnbond, types.DepositorDetailsUnbond{
+						depositorDetailsUnbond = append(depositorDetailsUnbond, grpctypes.DepositorDetailsUnbond{
 							Address:      string(k.Attributes[2].Value),
 							BlockHeight:  i,
 							BurntShares:  string(k.Attributes[3].Value),
@@ -542,7 +541,7 @@ func QueryDepositorsReplayChain(RPCAddress string, startingHeight, endHeight int
 							if err != nil {
 								return fmt.Errorf("incorrect lock ID at height %d", i)
 							}
-							tempContractDetailsMap[string(k.Attributes[0].Value)] = types.ContractDetails{
+							tempContractDetailsMap[string(k.Attributes[0].Value)] = grpctypes.ContractDetails{
 								Address:                 string(k.Attributes[0].Value),
 								LockID:                  lockID,
 								LockedTokensProtoString: string(k.Attributes[2].Value),
@@ -581,7 +580,7 @@ func QueryDepositorsReplayChain(RPCAddress string, startingHeight, endHeight int
 								value.LastUpdatedHeight = append(value.LastUpdatedHeight, i)
 								addressToSharesMap[string(k.Attributes[2].Value)] = value
 							} else {
-								addressToSharesMap[string(k.Attributes[2].Value)] = types.AddressSharesInIncentiveContract{
+								addressToSharesMap[string(k.Attributes[2].Value)] = grpctypes.AddressSharesInIncentiveContract{
 									Shares:            []string{string(k.Attributes[3].Value)},
 									LastUpdatedHeight: []int64{i},
 								}
@@ -596,7 +595,7 @@ func QueryDepositorsReplayChain(RPCAddress string, startingHeight, endHeight int
 						if string(k.Attributes[0].Key) == grpctypes.ContractAddress && string(k.Attributes[1].Key) == grpctypes.Action &&
 							string(k.Attributes[2].Key) == grpctypes.CallbackInfo && string(k.Attributes[3].Key) == grpctypes.ReplyMsgID &&
 							string(k.Attributes[4].Key) == grpctypes.ReplyResult {
-							tempCallBackInfos = append(tempCallBackInfos, types.CallBackInfo{
+							tempCallBackInfos = append(tempCallBackInfos, grpctypes.CallBackInfo{
 								ContractAddress:    string(k.Attributes[0].Value),
 								Action:             string(k.Attributes[1].Value),
 								CallBackInfoString: string(k.Attributes[2].Value),
@@ -610,7 +609,7 @@ func QueryDepositorsReplayChain(RPCAddress string, startingHeight, endHeight int
 				// begin unlocking
 				if k.Type == "wasm" && len(k.Attributes) == 3 {
 					if string(k.Attributes[2].Key) == "step" && strings.Contains(string(k.Attributes[2].Value), "BeginUnlocking") {
-						beginUnlocking = append(beginUnlocking, types.BeginUnlocking{
+						beginUnlocking = append(beginUnlocking, grpctypes.BeginUnlocking{
 							Height:          i,
 							Step:            string(k.Attributes[2].Value),
 							ContractAddress: string(k.Attributes[0].Value),
@@ -637,7 +636,7 @@ func QueryDepositorsReplayChain(RPCAddress string, startingHeight, endHeight int
 			}
 
 			for p := range tempBondIDs {
-				depositorDetails = append(depositorDetails, types.DepositorDetailsBond{
+				depositorDetails = append(depositorDetails, grpctypes.DepositorDetailsBond{
 					Address:      tempDepositorDetails[p].Address,
 					Amount:       tempDepositorDetails[p].Amount,
 					BlockHeight:  tempDepositorDetails[p].BlockHeight,
@@ -650,14 +649,14 @@ func QueryDepositorsReplayChain(RPCAddress string, startingHeight, endHeight int
 				for _, value := range tempContractDetailsMap {
 					tempContractDetails = append(tempContractDetails, value)
 				}
-				lockDetailsByHeight = append(lockDetailsByHeight, types.LockDetailsByHeight{
+				lockDetailsByHeight = append(lockDetailsByHeight, grpctypes.LockDetailsByHeight{
 					Height:          i,
 					ContractDetails: tempContractDetails,
 				})
 			}
 
 			if len(tempCallBackInfos) > 0 {
-				callBackInfoWithHeight = append(callBackInfoWithHeight, types.CallBackInfoWithHeight{
+				callBackInfoWithHeight = append(callBackInfoWithHeight, grpctypes.CallBackInfoWithHeight{
 					Height:        i,
 					CallBackInfos: tempCallBackInfos,
 				})

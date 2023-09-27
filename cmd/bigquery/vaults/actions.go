@@ -1,7 +1,7 @@
 package vaults
 
 import (
-	"github.com/arhamchordia/chain-details/cmd/config"
+	"github.com/arhamchordia/chain-details/cmd/bigquery"
 	"github.com/arhamchordia/chain-details/internal/bigquery/vaults"
 	"github.com/spf13/cobra"
 )
@@ -12,7 +12,7 @@ var BondCmd = &cobra.Command{
 	Long:  `This command allows you to query all the bond actions to the Quasar Vault. Provide optionally the address to filter for with the --address flag.`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := vaults.QueryBond(config.AddressQuery, config.ConfirmedQuery, config.PendingQuery, config.OutputFormat)
+		err := vaults.QueryBond(bigquery.AddressQuery, bigquery.ConfirmedQuery, bigquery.PendingQuery, bigquery.OutputFormat)
 		if err != nil {
 			return err
 		}
@@ -26,7 +26,7 @@ var UnbondCmd = &cobra.Command{
 	Long:  `This command allows you to query all the unbond actions to the Quasar Vault. Provide optionally the address to filter for with the --address flag.`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := vaults.QueryUnbond(config.AddressQuery, config.ConfirmedQuery, config.PendingQuery, config.OutputFormat)
+		err := vaults.QueryUnbond(bigquery.AddressQuery, bigquery.ConfirmedQuery, bigquery.PendingQuery, bigquery.OutputFormat)
 		if err != nil {
 			return err
 		}
@@ -40,7 +40,7 @@ var ClaimCmd = &cobra.Command{
 	Long:  `This command allows you to query all the claim actions to the Quasar Vault. Provide optionally the address to filter for with the --address flag.`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := vaults.QueryClaim(config.AddressQuery, config.OutputFormat)
+		err := vaults.QueryClaim(bigquery.AddressQuery, bigquery.OutputFormat)
 		if err != nil {
 			return err
 		}

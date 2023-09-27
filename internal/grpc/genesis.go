@@ -3,7 +3,6 @@ package grpc
 import (
 	"encoding/json"
 	"github.com/arhamchordia/chain-details/internal"
-	"github.com/arhamchordia/chain-details/types"
 	grpctypes "github.com/arhamchordia/chain-details/types/grpc"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"io"
@@ -23,7 +22,7 @@ func QueryGenesisJSON(jsonURL, denom string) error {
 		return err
 	}
 
-	var response types.Genesis
+	var response grpctypes.Genesis
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return err
@@ -39,13 +38,13 @@ func QueryGenesisJSON(jsonURL, denom string) error {
 
 // parseVestingAccounts parses all the vesting accounts in genesis file and
 // returns and error if anything fails
-func parseVestingAccounts(vestingAccounts []types.Account, denom string) error {
+func parseVestingAccounts(vestingAccounts []grpctypes.Account, denom string) error {
 	// initialise all types of vesting account arrays
 	var (
-		delayedVestingAccounts    []types.DelayedVestingAccount
-		continuousVestingAccounts []types.ContinuousVestingAccount
-		permanentLockedAccounts   []types.PermanentLockedAccount
-		periodicVestingAccounts   []types.PeriodicVestingAccount
+		delayedVestingAccounts    []grpctypes.DelayedVestingAccount
+		continuousVestingAccounts []grpctypes.ContinuousVestingAccount
+		permanentLockedAccounts   []grpctypes.PermanentLockedAccount
+		periodicVestingAccounts   []grpctypes.PeriodicVestingAccount
 	)
 
 	// iterate over all types of vesting accounts and performs
@@ -63,7 +62,7 @@ func parseVestingAccounts(vestingAccounts []types.Account, denom string) error {
 
 			delayedVestingAccounts = append(
 				delayedVestingAccounts,
-				types.DelayedVestingAccount{
+				grpctypes.DelayedVestingAccount{
 					Address: account.GetAddress(),
 					Tokens:  account.GetOriginalVesting(),
 					EndTime: endTime,
@@ -104,7 +103,7 @@ func parseVestingAccounts(vestingAccounts []types.Account, denom string) error {
 
 			continuousVestingAccounts = append(
 				continuousVestingAccounts,
-				types.ContinuousVestingAccount{
+				grpctypes.ContinuousVestingAccount{
 					Address:              account.GetAddress(),
 					StartTime:            startTime,
 					EndTime:              endTime,
@@ -118,7 +117,7 @@ func parseVestingAccounts(vestingAccounts []types.Account, denom string) error {
 		case grpctypes.IdentifierPermanentLockedAccount:
 			permanentLockedAccounts = append(
 				permanentLockedAccounts,
-				types.PermanentLockedAccount{
+				grpctypes.PermanentLockedAccount{
 					Address: account.GetAddress(),
 					Tokens:  account.GetOriginalVesting(),
 				})
@@ -148,11 +147,11 @@ func parseVestingAccounts(vestingAccounts []types.Account, denom string) error {
 
 				periodicVestingAccounts = append(
 					periodicVestingAccounts,
-					types.PeriodicVestingAccount{
+					grpctypes.PeriodicVestingAccount{
 						Address:   account.GetAddress(),
 						Tokens:    account.VestingPeriods[i].Amount,
-						StartTime: types.GetTimeFromUNIXTimeStamp(startTimeUNIX),
-						EndTime:   types.GetTimeFromUNIXTimeStamp(endTimeOfThisPeriod),
+						StartTime: grpctypes.GetTimeFromUNIXTimeStamp(startTimeUNIX),
+						EndTime:   grpctypes.GetTimeFromUNIXTimeStamp(endTimeOfThisPeriod),
 					},
 				)
 			}

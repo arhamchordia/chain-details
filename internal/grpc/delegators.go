@@ -12,8 +12,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"google.golang.org/grpc"
-
-	"github.com/arhamchordia/chain-details/types"
 )
 
 func QueryDelegatorsData(grpcUrl string) error {
@@ -69,11 +67,11 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 	}
 
 	// convert response to internal validators
-	validators := types.ConvertToInternalValidators(stakingResponse.Validators)
+	validators := grpctypes.ConvertToInternalValidators(stakingResponse.Validators)
 	validators.SortStable()
 
 	// define delegators array
-	var delegatorsSlice types.Delegators
+	var delegatorsSlice grpctypes.Delegators
 
 	// iterate through all the validators to find out delegations made to them
 	for _, val := range validators {
@@ -92,7 +90,7 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 		for _, delRes := range validatorDelegations.DelegationResponses {
 			delegatorsSlice = append(
 				delegatorsSlice,
-				types.Delegator{
+				grpctypes.Delegator{
 					DelegatorAddress: delRes.Delegation.DelegatorAddress,
 					ValidatorAddress: delRes.Delegation.ValidatorAddress,
 					Share:            delRes.Delegation.Shares,

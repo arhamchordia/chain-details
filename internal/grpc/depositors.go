@@ -755,7 +755,7 @@ func QueryBlocksSignerCounter(RPCAddress string, startingHeight, endHeight int64
 		if i%1000 == 0 {
 			fmt.Println(i)
 		}
-		time.Sleep(time.Second * 1)
+		time.Sleep(time.Millisecond * 20)
 
 		block, err := rpcClient.Block(context.Background(), &i)
 		if err != nil {

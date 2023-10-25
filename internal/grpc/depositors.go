@@ -764,10 +764,12 @@ func QueryBlocksSignerCounter(RPCAddress string, startingHeight, endHeight int64
 		for _, s := range block.Block.LastCommit.Signatures {
 			cons, err := sdk.ConsAddressFromHex(hex.EncodeToString(s.ValidatorAddress))
 			if err != nil {
+				fmt.Println("Cons from hex", err, i)
 				return err
 			}
 			bech32Addr, err := bech32.ConvertAndEncode("quasarvalcons", cons)
 			if err != nil {
+				fmt.Println("While converting to quasarvalcons", err, i)
 				return err
 			}
 			val, ok := valBlockCounter[bech32Addr]

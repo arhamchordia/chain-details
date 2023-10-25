@@ -750,7 +750,7 @@ func QueryBlocksSignerCounter(RPCAddress string, startingHeight, endHeight int64
 		return err
 	}
 
-	valMissedBlocks := make(map[string]uint64)
+	valBlockCounter := make(map[string]uint64)
 	for i := startingHeight; i <= endHeight; i++ {
 		if i%1000 == 0 {
 			fmt.Println(i)
@@ -770,14 +770,19 @@ func QueryBlocksSignerCounter(RPCAddress string, startingHeight, endHeight int64
 			if err != nil {
 				return err
 			}
-			val, ok := valMissedBlocks[bech32Addr]
+			val, ok := valBlockCounter[bech32Addr]
 			if ok {
-				valMissedBlocks[bech32Addr] = val + 1
+				valBlockCounter[bech32Addr] = val + 1
 			} else {
-				valMissedBlocks[bech32Addr] = 1
+				valBlockCounter[bech32Addr] = 1
 			}
 		}
 	}
-	fmt.Println(valMissedBlocks)
+	jsonContent, err := json.Marshal(valBlockCounter)
+	if err != nil {
+		return err
+	}
+	jsonString := string(jsonContent)
+	fmt.Println(jsonString)
 	return nil
 }

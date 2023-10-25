@@ -1,6 +1,6 @@
 module github.com/arhamchordia/chain-details
 
-go 1.19
+go 1.20
 
 require (
 	cloud.google.com/go/bigquery v1.43.0

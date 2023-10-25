@@ -2,9 +2,12 @@ package grpc
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	grpctypes "github.com/arhamchordia/chain-details/types/grpc"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"os"
 	"strconv"
 	"strings"
@@ -737,5 +740,44 @@ func QueryDepositorsReplayChain(RPCAddress string, startingHeight, endHeight int
 		return err
 	}
 
+	return nil
+}
+
+func QueryBlocksSignerCounter(RPCAddress string, startingHeight, endHeight int64) error {
+	// create an rpcClient with the given RPCAddress
+	rpcClient, err := http.New(RPCAddress, grpctypes.Websocket)
+	if err != nil {
+		return err
+	}
+
+	valMissedBlocks := make(map[string]uint64)
+	for i := startingHeight; i <= endHeight; i++ {
+		if i%1000 == 0 {
+			fmt.Println(i)
+		}
+		time.Sleep(time.Second * 1)
+
+		block, err := rpcClient.Block(context.Background(), &i)
+		if err != nil {
+			return err
+		}
+		for _, s := range block.Block.LastCommit.Signatures {
+			cons, err := sdk.ConsAddressFromHex(hex.EncodeToString(s.ValidatorAddress))
+			if err != nil {
+				return err
+			}
+			bech32Addr, err := bech32.ConvertAndEncode("quasarvalcons", cons)
+			if err != nil {
+				return err
+			}
+			val, ok := valMissedBlocks[bech32Addr]
+			if ok {
+				valMissedBlocks[bech32Addr] = val + 1
+			} else {
+				valMissedBlocks[bech32Addr] = 1
+			}
+		}
+	}
+	fmt.Println(valMissedBlocks)
 	return nil
 }

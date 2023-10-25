@@ -167,3 +167,26 @@ var DepositorsReplayChainCmd = &cobra.Command{
 		return nil
 	},
 }
+
+var BlockSignatureOfValidators = &cobra.Command{
+	Use:   "signer-counter [rpc-url] [start-height] [end-height]",
+	Short: "Queries blocks signed by the validators",
+	Args:  cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		rpcURL := args[0]
+		startingHeight, err := strconv.ParseInt(args[1], 10, 64)
+		if err != nil {
+			return err
+		}
+		endHeight, err := strconv.ParseInt(args[2], 10, 64)
+		if err != nil {
+			return err
+		}
+
+		err = grpc.QueryBlocksSignerCounter(rpcURL, startingHeight, endHeight)
+		if err != nil {
+			return err
+		}
+		return nil
+	},
+}

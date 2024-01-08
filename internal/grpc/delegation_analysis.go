@@ -3,11 +3,11 @@ package grpc
 import (
 	"context"
 	"crypto/tls"
+	"github.com/arhamchordia/chain-details/internal/export"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"time"
 
-	"github.com/arhamchordia/chain-details/internal"
 	grpctypes "github.com/arhamchordia/chain-details/types/grpc"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -94,7 +94,7 @@ func ParseDelegationAnalysis(grpcConn *grpc.ClientConn, address, denom string) e
 		data = append(data, temp)
 	}
 
-	err = internal.WriteCSV(
+	err = export.WriteCSV(
 		grpctypes.PrefixGRPC+grpctypes.DelegationAnalysis,
 		[]string{
 			grpctypes.HeaderAddress,

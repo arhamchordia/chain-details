@@ -3,12 +3,12 @@ package grpc
 import (
 	"context"
 	"crypto/tls"
+	"github.com/arhamchordia/chain-details/internal/export"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"strconv"
 	"time"
 
-	"github.com/arhamchordia/chain-details/internal"
 	grpctypes "github.com/arhamchordia/chain-details/types/grpc"
 	cryptotypes1 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -104,7 +104,7 @@ func ParseValidators(grpcConn *grpc.ClientConn, accountPrefix string) error {
 		data = append(data, temp)
 	}
 
-	err = internal.WriteCSV(
+	err = export.WriteCSV(
 		grpctypes.PrefixGRPC+grpctypes.ValidatorsInfoFileName,
 		[]string{
 			grpctypes.HeaderMoniker,
@@ -279,7 +279,7 @@ func ParseGenesisAndPostGenesisValidators(grpcConn *grpc.ClientConn) error {
 		data = append(data, temp)
 	}
 
-	err = internal.WriteCSV(
+	err = export.WriteCSV(
 		grpctypes.PrefixGRPC+grpctypes.GenesisPostGenesisValidators,
 		[]string{
 			grpctypes.HeaderGenesisType,

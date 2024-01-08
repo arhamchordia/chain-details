@@ -3,3 +3,4 @@
 .idea
 /scripts/.env
 service-account.json
+set_environment.sh

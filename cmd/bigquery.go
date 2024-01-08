@@ -24,8 +24,13 @@ func init() {
 
 	bigQueryCmd.PersistentFlags().StringVarP(&bigquery.OutputFormat, "output", "o", "csv", "Output format for generated files (csv/json)")
 
+	// General
 	BigQueryRegisterRawQueryCmd(bigQueryCmd)
-	BigQueryRegisterVaultsCmd(bigQueryCmd)
 	BigQueryRegisterTransactionsCmd(bigQueryCmd)
-	BigQueryRegisterReportCmd(bigQueryCmd)
+
+	// LP Strategy Vaults
+	BigQueryRegisterLPVaultsCmd(bigQueryCmd)
+
+	// CL Vaults
+	BigQueryRegisterCLVaultsCmd(bigQueryCmd)
 }

@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 	"crypto/tls"
-	"github.com/arhamchordia/chain-details/internal"
+	"github.com/arhamchordia/chain-details/internal/export"
 	"google.golang.org/grpc/credentials"
 	"time"
 
@@ -122,7 +122,7 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 		}
 	}
 
-	err = internal.WriteCSV(
+	err = export.WriteCSV(
 		grpctypes.PrefixGRPC+grpctypes.DelegatorDelegationEntriesFileName,
 		[]string{
 			grpctypes.HeaderDelegator,
@@ -140,7 +140,7 @@ func ParseDelegators(grpcConn *grpc.ClientConn) error {
 		delegatorShares = append(delegatorShares, []string{key, value.String()})
 	}
 
-	err = internal.WriteCSV(
+	err = export.WriteCSV(
 		grpctypes.PrefixGRPC+grpctypes.DelegatorSharesFileName,
 		[]string{
 			grpctypes.HeaderDelegator,

@@ -2,6 +2,7 @@ package bigquery
 
 import (
 	"github.com/arhamchordia/chain-details/internal"
+	"github.com/arhamchordia/chain-details/internal/export"
 	bigquerytypes "github.com/arhamchordia/chain-details/types/bigquery"
 	"log"
 )
@@ -17,11 +18,8 @@ func TransactionsQuery(AddressQuery string, outputFormat string) error {
 	}
 
 	filename := bigquerytypes.PrefixBigQuery + bigquerytypes.PrependQueryTransactions + AddressQuery
-	if outputFormat == "csv" {
-		err = internal.WriteCSV(filename, headers, rows)
-	} else {
-		err = internal.WriteJSON(filename, headers, rows)
-	}
+
+	err = export.ExportFile(outputFormat, filename, headers, rows)
 	if err != nil {
 		return err
 	}

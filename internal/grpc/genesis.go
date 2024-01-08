@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"encoding/json"
-	"github.com/arhamchordia/chain-details/internal"
+	"github.com/arhamchordia/chain-details/internal/export"
 	grpctypes "github.com/arhamchordia/chain-details/types/grpc"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"io"
@@ -201,7 +201,7 @@ func parseVestingAccounts(vestingAccounts []grpctypes.Account, denom string) err
 		)
 	}
 
-	err := internal.WriteCSV(
+	err := export.WriteCSV(
 		grpctypes.PrefixGRPC+grpctypes.GenesisAccountAnalysisFileName,
 		[]string{
 			grpctypes.HeaderAddress,

@@ -46,8 +46,9 @@ func BigQueryRegisterVaultsCmd(parentCmd *cobra.Command) {
 }
 
 func BigQueryRegisterReportCmd(parentCmd *cobra.Command) {
-	// ReportBondCmd
+	// ReportCmd
 	vaults.ReportCmd.Flags().IntVarP(&config.BlockHeight, "block", "b", 1, "Block height to query from")
 	vaults.ReportCmd.Flags().StringVarP(&config.AddressQuery, "address", "a", "", "Vault address to query")
+	vaults.ReportCmd.Flags().StringVar(&config.EndDate, "end-date", "", "End date for the report in YYYY-MM-DD format")
 	parentCmd.AddCommand(vaults.ReportCmd)
 }

@@ -23,17 +23,21 @@ type UpdateIndex struct {
 }
 
 // QueryDailyReport returns a file with the last 24h statistics of a given vaultAddress
-func QueryDailyReport(blockHeight int, addressQuery string, outputFormat string) error {
-	if len(addressQuery) == 0 {
-		log.Fatal("Vault address to query is mandatory")
-	}
+func QueryDailyReport(blockHeight int, addressQuery string, endDate *time.Time, outputFormat string) error {
 	if blockHeight < 1 {
 		log.Fatal("Block height should be higher than 0")
 	}
-
+	// Check if date is provided, if not set to default last 24 hours
+	if endDate == nil {
+		now := time.Now()
+		endDate = &now
+	}
+	if len(addressQuery) == 0 {
+		log.Fatal("Vault address to query is mandatory")
+	}
 	filename := fmt.Sprintf("%s_%s", bigquerytypes.PrefixBigQuery+bigquerytypes.PrependQueryDailyReport, addressQuery)
 
-	rewardsUpdateUser, err := queryDailyReportRewardsUpdateUser(blockHeight, addressQuery)
+	rewardsUpdateUser, err := queryDailyReportRewardsUpdateUser(blockHeight, *endDate, addressQuery)
 	if err != nil {
 		return err
 	}
@@ -245,8 +249,13 @@ func parseTransactions(input string) ([][]string, error) {
 	return transactions, nil
 }
 
-func queryDailyReportRewardsUpdateUser(blockHeight int, addressQuery string) (map[string][]UpdateIndex, error) {
-	_, rows, err := internal.ExecuteQueryAndFetchRows(fmt.Sprintf(bigquerytypes.QueryDailyReportRewardsUpdateUser, blockHeight, addressQuery), "", false)
+func queryDailyReportRewardsUpdateUser(blockHeight int, endDate time.Time, addressQuery string) (map[string][]UpdateIndex, error) {
+	// Format the start and end dates
+	endDateStr := endDate.UTC().Format("2006-01-02 15:04:05")
+
+	// Update the SQL query to use the formatted dates
+	query := fmt.Sprintf(bigquerytypes.QueryDailyReportRewardsUpdateUser, blockHeight, endDateStr, addressQuery)
+	_, rows, err := internal.ExecuteQueryAndFetchRows(query, "", false)
 	if err != nil {
 		log.Fatalf("%v", err)
 		return nil, err

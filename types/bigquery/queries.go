@@ -376,6 +376,7 @@ ORDER BY
   WHERE
     event_type = 'wasm'
 	AND block_height >= %d
+    AND ingestion_timestamp <= '%s'
 ),
 
 grouped_data AS (
